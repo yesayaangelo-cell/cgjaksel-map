@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CG JAKSEL — 2.5D Geospatial Command Center</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              family: '#c084fc',
+              senior: '#fbbf24',
+              ya: '#22d3ee',
+              bg: '#040810',
+              panel: 'rgba(10, 18, 30, 0.78)',
+              border: 'rgba(40, 75, 110, 0.35)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --glow-ya: 0 0 20px rgba(34, 211, 238, 0.65);
+      --glow-family: 0 0 20px rgba(192, 132, 252, 0.65);
+      --glow-senior: 0 0 20px rgba(251, 191, 36, 0.65);
+    }
+    body {
+      background-color: #020408;
+      color: #e2e8f0;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* 16:9 Presentation Stage Container */
+    #stage-16-9 {
+      position: relative;
+      width: 100vw;
+      height: 56.25vw;
+      max-height: 100vh;
+      max-width: 177.78vh;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      box-shadow: 0 0 80px rgba(0, 0, 0, 0.98), 0 0 0 1px rgba(34, 211, 238, 0.25), inset 0 0 80px rgba(6, 182, 212, 0.04);
+      border-radius: 14px;
+      background: #02060d;
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: #020712;
+      z-index: 1;
+    }
+
+    .force-clickable {
+      pointer-events: auto !important;
+      cursor: pointer !important;
+      z-index: 9999 !important;
+    }
+
+    /* Glassmorphism Classes */
+    .glass-panel {
+      background: rgba(4, 11, 22, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(34, 211, 238, 0.05);
+    }
+    .glass-pill {
+      background: rgba(8, 18, 34, 0.9);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-pill:hover {
+      border-color: rgba(34, 211, 238, 0.6);
+      box-shadow: 0 0 25px rgba(34, 211, 238, 0.35);
+      transform: translateY(-1px);
+    }
+    .glass-pill.active {
+      background: linear-gradient(135deg, rgba(14, 116, 144, 0.9) 0%, rgba(6, 182, 212, 0.5) 100%);
+      border-color: #22d3ee;
+      box-shadow: 0 0 35px rgba(34, 211, 238, 0.55), inset 0 0 15px rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    /* HUD Crosshairs */
+    .corner-bracket {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+      z-index: 25;
+      border-color: rgba(34, 211, 238, 0.55);
+    }
+    .corner-tl { top: 10px; left: 10px; border-top: 2px solid; border-left: 2px solid; }
+    .corner-tr { top: 10px; right: 10px; border-top: 2px solid; border-right: 2px solid; }
+    .corner-bl { bottom: 10px; left: 10px; border-bottom: 2px solid; border-left: 2px solid; }
+    .corner-br { bottom: 10px; right: 10px; border-bottom: 2px solid; border-right: 2px solid; }
+
+    /* Orbital Radar Scan Overlay */
+    .radar-sweep-cone {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 140vmax;
+      height: 140vmax;
+      margin-top: -70vmax;
+      margin-left: -70vmax;
+      pointer-events: none;
+      z-index: 5;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg at 50% 50%, rgba(34, 211, 238, 0.12) 0deg, rgba(34, 211, 238, 0.02) 40deg, transparent 60deg, transparent 360deg);
+      animation: radar-rotate 16s linear infinite;
+      mix-blend-mode: screen;
+      opacity: 0.7;
+    }
+    @keyframes radar-rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Cyber Sci-Fi Map Grid Layer */
+    .cyber-grid {
+      background-image: 
+        radial-gradient(circle at center, rgba(34, 211, 238, 0.08) 1px, transparent 1px),
+        linear-gradient(to right, rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px, 80px 80px, 80px 80px;
+      pointer-events: none;
+    }
+
+    /* Quantum Node Markers */
+    .custom-marker {
+      position: relative;
+      width: 26px;
+      height: 26px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translate(-50%, -50%);
+    }
+    .marker-outer-orbit {
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 1px dashed currentColor;
+      opacity: 0.6;
+      animation: spin-orbit 8s linear infinite;
+    }
+    @keyframes spin-orbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .marker-core {
+      width: 11px;
+      height: 11px;
+      border-radius: 9999px;
+      border: 2px solid #ffffff;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 0 14px currentColor, 0 0 25px currentColor;
+    }
+    .custom-marker:hover .marker-core {
+      transform: scale(1.7);
+      box-shadow: 0 0 25px #ffffff, 0 0 35px currentColor;
+    }
+    .marker-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 9999px;
+      border: 1.5px solid currentColor;
+      opacity: 0.85;
+      animation: pulse-ring 2.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.5); opacity: 1; }
+      70% { transform: scale(2.2); opacity: 0.2; }
+      100% { transform: scale(2.7); opacity: 0; }
+    }
+
+    /* National Epicenter Ripple Ring */
+    .national-beacon {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .beacon-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 24px #22d3ee, 0 0 45px #06b6d4;
+      border: 2px solid #ffffff;
+    }
+    .beacon-wave-1, .beacon-wave-2, .beacon-wave-3 {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid #22d3ee;
+      animation: wave 3.2s ease-out infinite;
+    }
+    .beacon-wave-2 { animation-delay: 1s; }
+    .beacon-wave-3 { animation-delay: 2s; }
+    @keyframes wave {
+      0% { transform: scale(0.2); opacity: 1; }
+      100% { transform: scale(3.2); opacity: 0; }
+    }
+
+    .scanline {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(34, 211, 238, 0.02), rgba(0, 255, 0, 0.01), rgba(168, 85, 247, 0.02));
+      background-size: 100% 4px, 8px 100%;
+      pointer-events: none;
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(8, 16, 28, 0.4); }
+    ::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.25); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.5); }
+
+    .leaflet-container { background: #020712 !important; outline: none; }
+    .leaflet-control-zoom { display: none !important; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: rgba(6, 13, 24, 0.95) !important;
+      color: #e2e8f0 !important;
+      border: 1px solid rgba(56, 189, 248, 0.3) !important;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.8) !important;
+      backdrop-filter: blur(8px);
+      border-radius: 12px !important;
+      padding: 0 !important;
+    }
+    .leaflet-popup-content { margin: 10px 14px !important; line-height: 1.4 !important; }
+
+    .neon-boundary-path {
+      filter: drop-shadow(0 0 6px #22d3ee) drop-shadow(0 0 18px rgba(6, 182, 212, 0.85)) drop-shadow(0 0 35px rgba(34, 211, 238, 0.7));
+      animation: neon-pulse 3s ease-in-out infinite alternate;
+    }
+    @keyframes neon-pulse {
+      0% { stroke-opacity: 0.85; filter: drop-shadow(0 0 5px #22d3ee) drop-shadow(0 0 14px rgba(6, 182, 212, 0.75)); }
+      100% { stroke-opacity: 1; filter: drop-shadow(0 0 10px #38bdf8) drop-shadow(0 0 25px rgba(34, 211, 238, 1)) drop-shadow(0 0 42px rgba(6, 182, 212, 0.8)); }
+    }
+
+    .neon-jaksel-path {
+      filter: drop-shadow(0 0 7px #38bdf8) drop-shadow(0 0 18px rgba(56, 189, 248, 0.9)) drop-shadow(0 0 32px rgba(14, 165, 233, 0.75));
+      animation: neon-jaksel-pulse 2.8s ease-in-out infinite alternate;
+    }
+    @keyframes neon-jaksel-pulse {
+      0% { stroke-opacity: 0.85; filter: drop-shadow(0 0 4px #0284c7) drop-shadow(0 0 12px rgba(56, 189, 248, 0.75)); }
+      100% { stroke-opacity: 1; filter: drop-shadow(0 0 10px #38bdf8) drop-shadow(0 0 24px rgba(56, 189, 248, 1)) drop-shadow(0 0 38px rgba(14, 165, 233, 0.85)); }
+    }
+  </style>
+</head>
+<body class="w-screen h-screen relative font-sans bg-black flex items-center justify-center p-0 md:p-3">
+
+  <!-- 16:9 Widescreen Presentation Shell -->
+  <main id="stage-16-9">
+
+    <!-- Sci-Fi HUD Corner Brackets -->
+    <div class="corner-bracket corner-tl"></div>
+    <div class="corner-bracket corner-tr"></div>
+    <div class="corner-bracket corner-bl"></div>
+    <div class="corner-bracket corner-br"></div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Sci-Fi Radar Rotating Scanner Cone -->
+    <div class="radar-sweep-cone"></div>
+
+    <!-- Futuristic Cyber Grid Overlay -->
+    <div class="cyber-grid absolute inset-0 z-[6] pointer-events-none"></div>
+
+    <!-- Toast Notification Feedback -->
+    <div id="toast-notify" class="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] opacity-0 pointer-events-none transition-all duration-300 transform -translate-y-2 glass-panel px-4 py-2 rounded-xl text-xs font-mono text-cyan-300 border-cyan-400/50 flex items-center gap-2 shadow-[0_0_30px_rgba(34,211,238,0.5)]">
+      <span class="text-base animate-pulse">⌖</span>
+      <span id="toast-text">Command Center Reset</span>
+    </div>
+
+    <!-- Scanline texture overlay -->
+    <div class="scanline absolute inset-0 z-10 pointer-events-none"></div>
+
+    <!-- TOP-RIGHT STACK: Satellite Telemetry Clock & Connect Group HUD Card -->
+    <div class="absolute top-3.5 right-4 z-20 flex flex-col items-end gap-2 pointer-events-none">
+      
+      <!-- SAT-LINK & WIB Clock Widget -->
+      <div id="satlink-widget" class="glass-panel w-72 px-3 py-1.5 rounded-lg border-cyan-500/25 flex items-center justify-between font-mono text-[9px] text-cyan-300/80 pointer-events-auto">
+        <div class="flex items-center gap-1.5">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="text-slate-400">SAT-LINK:</span>
+          <span class="text-cyan-200 font-bold tracking-wider">ONLINE // 106.8°E</span>
+        </div>
+        <div class="h-3 w-[1px] bg-cyan-500/30"></div>
+        <div id="utc-clock" class="text-slate-200 font-semibold tracking-widest">00:00:00 WIB</div>
+      </div>
+
+      <!-- Scaled Connect Group HUD Card -->
+      <header id="main-header-brand" class="pointer-events-auto">
+        <button id="btn-brand-home" type="button" onclick="resetToHomeCommand()" title="Click to reset to Home Command Center (Key: H)" class="glass-panel w-72 px-3 py-1.5 rounded-lg flex items-center justify-between force-clickable border-r-2 border-r-cyan-400 border-l-0 text-right hover:border-r-cyan-300 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all group">
+          <div class="w-5 h-5 rounded-md bg-cyan-950/80 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.3)] group-hover:scale-105 transition-transform shrink-0">
+            <svg class="w-2.5 h-2.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" stroke-opacity="0.3"></circle>
+              <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+              <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+            </svg>
+          </div>
+          <div class="flex-1 pl-2">
+            <div class="flex items-center justify-end gap-1.5 leading-none">
+              <span class="text-[7px] font-mono text-emerald-400 font-medium">LIVE</span>
+              <span class="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-[7.5px] font-mono tracking-widest text-cyan-400 font-bold uppercase">JAKARTA SELATAN</span>
+            </div>
+            <div class="flex items-center justify-end gap-1 mt-0.5">
+              <span class="text-[7.5px] px-1 py-0.1 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">2.5D</span>
+              <span class="text-[11px] font-bold text-white tracking-wide leading-tight">CONNECT GROUP</span>
+            </div>
+            <div class="text-[7.5px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5 leading-none" id="scope-status">
+              <span class="text-cyan-300 truncate max-w-[190px] font-medium" id="scope-title">LOCAL HIGH-DENSITY CLUSTER (JAKSEL)</span>
+              <span class="text-slate-500 text-[7px]">:SCOPE</span>
+            </div>
+          </div>
+        </button>
+      </header>
+
+      <!-- Data Export / Persistence Status Button -->
+      <div class="flex items-center gap-1.5 pointer-events-auto">
+        <button onclick="exportDataJson()" title="Download updated dataset backup as JSON" class="px-2.5 py-1 rounded-md glass-panel border border-cyan-500/30 text-[9px] font-mono text-slate-300 hover:text-cyan-200 hover:border-cyan-400 flex items-center gap-1 transition-all">
+          <span>💾 Backup Data</span>
+        </button>
+        <button onclick="resetDataToFactory()" title="Reset all changes back to initial list" class="px-2 py-1 rounded-md glass-panel border border-rose-500/30 text-[9px] font-mono text-slate-400 hover:text-rose-300 hover:border-rose-400 transition-all">
+          <span>↺ Reset</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- PRESENTATION CONTROLLER: Bottom-Center Floating Flight Command Pill -->
+    <nav id="bottom-controller" class="absolute bottom-11 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 pointer-events-none transition-all duration-500 ease-out">
+      
+      <!-- Keyboard shortcut hint -->
+      <div class="text-[9px] font-mono tracking-wider text-slate-400/80 bg-black/75 px-3.5 py-1 rounded-full border border-white/10 backdrop-blur-md pointer-events-auto whitespace-nowrap shadow-lg">
+        PRESENTER KEYS: <span class="text-cyan-300 font-bold">[H]</span> HOME &nbsp;•&nbsp; <span class="text-cyan-300 font-bold">[J]</span> JAKSEL &nbsp;•&nbsp; <span class="text-cyan-300 font-bold">[B]</span> JAKARTA &nbsp;•&nbsp; <span class="text-cyan-300 font-bold">[I]</span> ARCHIPELAGO &nbsp;•&nbsp; <span class="text-cyan-300 font-bold">[C]</span> CONTROLS
+      </div>
+
+      <!-- Flight Navigation Bar -->
+      <div class="glass-panel px-3 py-2 rounded-2xl flex items-center gap-2 shadow-[0_10px_35px_rgba(0,0,0,0.85)] border-cyan-500/30 pointer-events-auto whitespace-nowrap">
+        
+        <!-- Home Command Center Button -->
+        <button id="btn-home" type="button" class="glass-pill active px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold tracking-wide text-cyan-200 border-cyan-400/60 force-clickable" title="Reset to Home Command Center View (Key: H)">
+          <span class="text-sm">🏠</span>
+          <span class="whitespace-nowrap">Home</span>
+        </button>
+
+        <div class="w-[1px] h-5 bg-slate-700/60 mx-0.5"></div>
+
+        <!-- Preset 1: Jaksel Local -->
+        <button id="pill-jaksel" type="button" class="glass-pill px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-300 force-clickable" title="Key: J atau 1">
+          <span class="text-cyan-300">📍</span>
+          <span class="whitespace-nowrap">Jaksel Focus</span>
+        </button>
+
+        <!-- Preset 2: Jakarta Scope -->
+        <button id="pill-jakarta" type="button" class="glass-pill px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-300 force-clickable" title="Key: B atau 2">
+          <span class="text-purple-300">🏙️</span>
+          <span class="whitespace-nowrap">Jakarta</span>
+        </button>
+
+        <!-- Preset 3: Archipelago / National Scale -->
+        <button id="pill-indonesia" type="button" class="glass-pill px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-300 force-clickable" title="Key: I atau 3">
+          <span class="text-amber-300">🇮🇩</span>
+          <span class="whitespace-nowrap">Archipelago</span>
+        </button>
+
+      </div>
+    </nav>
+
+    <!-- TOUCHSCREEN / IPAD TOGGLE BUTTON [C] -->
+    <button id="btn-toggle-c" type="button" onclick="toggleBottomControls()" title="Toggle Navigation Menu (Key: C / Touch)" class="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-40 px-3 py-1 rounded-full glass-panel border border-cyan-400/40 text-[9.5px] font-mono font-semibold text-cyan-300 hover:text-white hover:border-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.5)] flex items-center gap-1.5 transition-all duration-300 shadow-lg active:scale-95 pointer-events-auto">
+      <span id="btn-c-icon" class="text-[10px] transition-transform duration-300">▼</span>
+      <span id="btn-c-text">HIDE [C]</span>
+    </button>
+
+    <!-- RIGHT SLIDE-OVER: CG Telemetry & Inspector Panel -->
+    <aside id="inspector" class="absolute top-16 bottom-16 right-5 w-96 max-w-[calc(100vw-2.5rem)] z-30 transform translate-x-[115%] transition-transform duration-500 ease-out flex flex-col pointer-events-auto">
+      <div class="glass-panel flex-1 rounded-2xl flex flex-col overflow-hidden border-cyan-400/30">
+        
+        <!-- Panel Header -->
+        <div class="px-5 py-3 border-b border-slate-700/60 flex items-center justify-between bg-slate-900/50">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <div>
+              <span class="text-[8.5px] font-mono tracking-widest text-cyan-400 font-bold uppercase">INTELLIGENCE INSPECTOR</span>
+              <h2 id="insp-header-title" class="text-xs font-bold text-white tracking-wide">CG Profile Details</h2>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button id="btn-mode-toggle" onclick="toggleEditMode()" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 hover:bg-cyan-500/30 text-[10px] font-mono font-bold flex items-center gap-1 transition-colors">
+              <span id="btn-mode-icon">✏️</span>
+              <span id="btn-mode-label">EDIT DATA</span>
+            </button>
+            <button onclick="closeInspector()" class="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel Body: VIEW MODE -->
+        <div id="inspector-view-mode" class="p-4 flex-1 overflow-y-auto space-y-3">
+          
+          <!-- Category Banner -->
+          <div id="insp-badge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold border">
+            <span class="w-2 h-2 rounded-full bg-current"></span>
+            <span id="insp-category">Young Adult</span>
+          </div>
+
+          <div>
+            <div class="text-[9.5px] font-mono text-slate-400 uppercase tracking-wider">Designation / Group Name</div>
+            <div id="insp-name" class="text-lg font-black text-white mt-0.5 tracking-tight">CG YA 19 - Grow</div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+            <div>
+              <div class="text-[9px] font-mono text-slate-500 uppercase">Community Leader(s)</div>
+              <div id="insp-leader" class="text-xs font-semibold text-slate-200">Nabila</div>
+            </div>
+            <div class="border-t border-slate-800/80 pt-2">
+              <div class="text-[9px] font-mono text-slate-500 uppercase">Assigned Strategic Area</div>
+              <div id="insp-area" class="text-xs font-semibold text-cyan-300">Gandaria City, Jakarta Selatan</div>
+            </div>
+          </div>
+
+          <!-- Coordinates Matrix -->
+          <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+            <div class="p-2 rounded-lg bg-black/40 border border-slate-800">
+              <span class="text-slate-500 text-[8px] block">LATITUDE</span>
+              <span id="insp-lat" class="text-slate-200 font-medium">-6.24422</span>
+            </div>
+            <div class="p-2 rounded-lg bg-black/40 border border-slate-800">
+              <span class="text-slate-500 text-[8px] block">LONGITUDE</span>
+              <span id="insp-lng" class="text-slate-200 font-medium">106.78348</span>
+            </div>
+          </div>
+
+          <!-- Verification Banner -->
+          <div class="p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-xs">
+            <div class="flex items-center gap-2 text-cyan-300 font-mono text-[9px] font-bold">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              STATUS VERIFIKASI SPASIAL
+            </div>
+            <div id="insp-status" class="text-slate-300 text-[10px] mt-1 leading-relaxed">
+              Koordinat area representatif tersedia.
+            </div>
+          </div>
+
+          <!-- Co-located CGs in the same area -->
+          <div id="co-located-container" class="space-y-1.5 pt-1">
+            <div class="text-[9px] font-mono text-slate-400 flex items-center justify-between">
+              <span>OTHER CGS IN THIS AREA</span>
+              <span id="co-count" class="text-cyan-400 font-bold">0</span>
+            </div>
+            <div id="co-located-list" class="space-y-1 max-h-28 overflow-y-auto text-xs"></div>
+          </div>
+
+        </div>
+
+        <!-- Panel Body: EDIT MODE (Interactive Form) -->
+        <form id="inspector-edit-mode" onsubmit="saveNodeEdits(event)" class="hidden p-4 flex-1 overflow-y-auto space-y-3 font-mono text-xs">
+          
+          <div>
+            <label class="text-[9px] text-cyan-300 uppercase block mb-1">Nomor / Nama CG *</label>
+            <input type="text" id="edit-nomor" required class="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-100 focus:border-cyan-400 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="text-[9px] text-cyan-300 uppercase block mb-1">Kategori CG *</label>
+            <select id="edit-kategori" required class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-100 focus:border-cyan-400 focus:outline-none">
+              <option value="YA">YA (Young Adult)</option>
+              <option value="Family">Family</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[9px] text-cyan-300 uppercase block mb-1">Nama / Pemimpin CG</label>
+            <input type="text" id="edit-leader" class="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-100 focus:border-cyan-400 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="text-[9px] text-cyan-300 uppercase block mb-1">Nama Lokasi / Area *</label>
+            <input type="text" id="edit-area" required class="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-100 focus:border-cyan-400 focus:outline-none">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[9px] text-slate-400 uppercase block mb-1">Latitude *</label>
+              <input type="number" step="any" id="edit-lat" required class="w-full px-2 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-200 text-[11px] focus:border-cyan-400 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-[9px] text-slate-400 uppercase block mb-1">Longitude *</label>
+              <input type="number" step="any" id="edit-lng" required class="w-full px-2 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-200 text-[11px] focus:border-cyan-400 focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[9px] text-slate-400 uppercase block mb-1">Status Verifikasi</label>
+            <input type="text" id="edit-status" class="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-300 text-[11px] focus:border-cyan-400 focus:outline-none">
+          </div>
+
+          <!-- Edit Action Buttons -->
+          <div class="pt-2 flex gap-2">
+            <button type="submit" class="flex-1 py-2 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+              <span>💾 SIMPAN PERUBAHAN</span>
+            </button>
+            <button type="button" onclick="cancelEditMode()" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors">
+              Batal
+            </button>
+          </div>
+        </form>
+
+        <!-- View Mode Footer Action -->
+        <div id="inspector-view-footer" class="p-3 border-t border-slate-800 bg-slate-900/50 flex gap-2">
+          <button id="btn-focus-node" class="flex-1 py-2 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-200 text-xs font-mono font-semibold flex items-center justify-center gap-2 transition-colors">
+            <span>🎯 ZOOM PERSPECTIVE</span>
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Complete Script Block -->
+  <script>
+    const STORAGE_KEY = 'cg_jaksel_dataset_v1';
+
+    // Map Instance Setup
+    const map = L.map('map', {
+      center: [-6.285, 106.815],
+      zoom: 11.9,
+      zoomControl: false,
+      attributionControl: false
+    });
+
+    // Dark canvas base layer
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16
+    }).addTo(map);
+
+    // Subtle road and place labels overlay
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+      opacity: 0.75
+    }).addTo(map);
+
+    // Initial Default 119 CG Data
+    const DEFAULT_DATA = [
+      {"id":"cg-02","Kategori": "Family", "Nomor CG": "CG 02", "Nama/Pemimpin CG": "Yosea - Meity", "Nama lokasi / area": "Tebet", "Latitude": -6.23075, "Longitude": 106.85329, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-03","Kategori": "Family", "Nomor CG": "CG 03", "Nama/Pemimpin CG": "Leo - Vani", "Nama lokasi / area": "Tebet", "Latitude": -6.23075, "Longitude": 106.85329, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-05","Kategori": "Family", "Nomor CG": "CG 05", "Nama/Pemimpin CG": "Andre - Inggra", "Nama lokasi / area": "Tanjung Barat", "Latitude": -6.30943, "Longitude": 106.85058, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-07","Kategori": "Family", "Nomor CG": "CG 07", "Nama/Pemimpin CG": "Erick - Greace", "Nama lokasi / area": "Senopati", "Latitude": -6.23143, "Longitude": 106.80954, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-09","Kategori": "Family", "Nomor CG": "CG 09", "Nama/Pemimpin CG": "Thedi - Yana", "Nama lokasi / area": "Ciganjur", "Latitude": -6.33813, "Longitude": 106.81041, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-11","Kategori": "Family", "Nomor CG": "CG 11", "Nama/Pemimpin CG": "Alvin - Sonson", "Nama lokasi / area": "Senayan", "Latitude": -6.22765, "Longitude": 106.8127, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-12","Kategori": "Family", "Nomor CG": "CG 12", "Nama/Pemimpin CG": "Denny - Novi", "Nama lokasi / area": "Pesanggrahan", "Latitude": -6.25691, "Longitude": 106.75712, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-13","Kategori": "Family", "Nomor CG": "CG 13", "Nama/Pemimpin CG": "Peter - Dewi", "Nama lokasi / area": "Pondok Cabe", "Latitude": -6.3489, "Longitude": 106.7663, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-14","Kategori": "Family", "Nomor CG": "CG 14", "Nama/Pemimpin CG": "Erik - Sella", "Nama lokasi / area": "Pondok Labu", "Latitude": -6.30625, "Longitude": 106.79855, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-15","Kategori": "Family", "Nomor CG": "CG 15", "Nama/Pemimpin CG": "Clift - Bunga", "Nama lokasi / area": "Cinere", "Latitude": -6.33609, "Longitude": 106.78834, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-16","Kategori": "Family", "Nomor CG": "CG 16", "Nama/Pemimpin CG": "Rocky - Eliza", "Nama lokasi / area": "Kemang", "Latitude": -6.25921, "Longitude": 106.82587, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-17","Kategori": "Family", "Nomor CG": "CG 17", "Nama/Pemimpin CG": "Pras - Femmy", "Nama lokasi / area": "Gandaria", "Latitude": -6.24475, "Longitude": 106.79059, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-18","Kategori": "Family", "Nomor CG": "CG 18", "Nama/Pemimpin CG": "Agung - Denisa", "Nama lokasi / area": "Bintaro", "Latitude": -6.27268, "Longitude": 106.76424, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-19","Kategori": "Family", "Nomor CG": "CG 19", "Nama/Pemimpin CG": "Rickson - Erma", "Nama lokasi / area": "Kalibata", "Latitude": -6.26033, "Longitude": 106.84705, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-20","Kategori": "Family", "Nomor CG": "CG 20", "Nama/Pemimpin CG": "Stefanus - Virginia", "Nama lokasi / area": "Hang Lekir", "Latitude": -6.22765, "Longitude": 106.8127, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-23","Kategori": "Family", "Nomor CG": "CG 23", "Nama/Pemimpin CG": "Ferdinand - Florence", "Nama lokasi / area": "Permata Hijau", "Latitude": -6.23023, "Longitude": 106.78337, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-32","Kategori": "Family", "Nomor CG": "CG 32", "Nama/Pemimpin CG": "Wira - Sherly", "Nama lokasi / area": "Wijaya", "Latitude": -6.24833, "Longitude": 106.80272, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-33","Kategori": "Family", "Nomor CG": "CG 33", "Nama/Pemimpin CG": "Kevin - Shinta", "Nama lokasi / area": "Rasuna", "Latitude": -6.2187, "Longitude": 106.82491, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-34","Kategori": "Family", "Nomor CG": "CG 34", "Nama/Pemimpin CG": "Nelson - Ditha", "Nama lokasi / area": "Cipulir", "Latitude": -6.23918, "Longitude": 106.77636, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-35","Kategori": "Family", "Nomor CG": "CG 35", "Nama/Pemimpin CG": "Jirry - Bella", "Nama lokasi / area": "Rempoa", "Latitude": -6.2896, "Longitude": 106.7584, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-38","Kategori": "Family", "Nomor CG": "CG 38", "Nama/Pemimpin CG": "Leno - Elsa", "Nama lokasi / area": "Pasar Minggu", "Latitude": -6.28576, "Longitude": 106.84024, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-43","Kategori": "Family", "Nomor CG": "CG 43", "Nama/Pemimpin CG": "Ferry - Riyanti", "Nama lokasi / area": "Casablanca", "Latitude": -6.22475, "Longitude": 106.83945, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-44","Kategori": "Family", "Nomor CG": "CG 44", "Nama/Pemimpin CG": "Samuel - Yiska", "Nama lokasi / area": "Duren Tiga", "Latitude": -6.2541, "Longitude": 106.83675, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-45","Kategori": "Family", "Nomor CG": "CG 45", "Nama/Pemimpin CG": "Guntaru - Lisa", "Nama lokasi / area": "Menteng", "Latitude": -6.19502, "Longitude": 106.83222, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-46","Kategori": "Family", "Nomor CG": "CG 46", "Nama/Pemimpin CG": "Andre - Jennie", "Nama lokasi / area": "Emerald", "Latitude": -6.27324, "Longitude": 106.69891, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-47","Kategori": "Family", "Nomor CG": "CG 47", "Nama/Pemimpin CG": "Henry - Nita", "Nama lokasi / area": "Gandaria", "Latitude": -6.24475, "Longitude": 106.79059, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-48","Kategori": "Family", "Nomor CG": "CG 48", "Nama/Pemimpin CG": "Benny - Renny", "Nama lokasi / area": "Pondok Indah", "Latitude": -6.26964, "Longitude": 106.77595, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-49","Kategori": "Family", "Nomor CG": "CG 49", "Nama/Pemimpin CG": "Jefri - Meimei", "Nama lokasi / area": "Lebak Bulus", "Latitude": -6.30447, "Longitude": 106.78442, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-50","Kategori": "Family", "Nomor CG": "CG 50", "Nama/Pemimpin CG": "Hans - Irene", "Nama lokasi / area": "Semanggi - Sudirman", "Latitude": -6.21537, "Longitude": 106.82219, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-51","Kategori": "Family", "Nomor CG": "CG 51", "Nama/Pemimpin CG": "Rowland - Ellen", "Nama lokasi / area": "Pakubuwono", "Latitude": -6.23578, "Longitude": 106.78999, "Status verifikasi": "Koordinat area representatif"},
+      // --- CG SENIOR (UPDATED DATASET DENGAN ALAMAT & KOORDINAT TERVERIFIKASI) ---
+      // Under Coach Charles & Sondang:
+      {"id":"cg-s10","Kategori": "Senior", "Nomor CG": "CG 10", "Nama/Pemimpin CG": "Marulak Togatorop & Tientje", "Nama lokasi / area": "Jl. Tanah Ara No. 57B, Pondok Pinang", "Latitude": -6.27318, "Longitude": 106.77254, "Status verifikasi": "Alamat terverifikasi (Pondok Pinang)"},
+      {"id":"cg-s30","Kategori": "Senior", "Nomor CG": "CG 30", "Nama/Pemimpin CG": "Yefta Febrico Manggala & Putri Afrianti", "Nama lokasi / area": "Discovery Alton Blok DN/H-08, Bintaro Sektor 7", "Latitude": -6.27622, "Longitude": 106.71182, "Status verifikasi": "Alamat terverifikasi (Bintaro Jaya)"},
+      {"id":"cg-s37","Kategori": "Senior", "Nomor CG": "CG 37", "Nama/Pemimpin CG": "Bernard Junaidi Lohanda & Lanita Djohan", "Nama lokasi / area": "Jl. Ir. Juanda No. 125, Ciputat", "Latitude": -6.31175, "Longitude": 106.75382, "Status verifikasi": "Alamat terverifikasi (Ciputat)"},
+      {"id":"cg-s42","Kategori": "Senior", "Nomor CG": "CG 42", "Nama/Pemimpin CG": "Asrul Abdul Rahman & Gracia Citrawerdhini", "Nama lokasi / area": "Jl. Kalimongso No. 129A, Griya Soegi, Jurang Mangu Timur", "Latitude": -6.27783, "Longitude": 106.73815, "Status verifikasi": "Alamat terverifikasi (Jurang Mangu)"},
+      // Under Coach Perry:
+      {"id":"cg-s01","Kategori": "Senior", "Nomor CG": "CG 01", "Nama/Pemimpin CG": "Helmi Ponto & Siska Budiman Ponto", "Nama lokasi / area": "Banjar Sari VI No. 1A, Fatmawati", "Latitude": -6.29415, "Longitude": 106.79422, "Status verifikasi": "Alamat terverifikasi (Fatmawati)"},
+      {"id":"cg-s21","Kategori": "Senior", "Nomor CG": "CG 21", "Nama/Pemimpin CG": "Daniel Tumbur & Merry Pardede", "Nama lokasi / area": "Jl. Haji Godeng No. 10, Pondok Pinang", "Latitude": -6.27581, "Longitude": 106.77095, "Status verifikasi": "Alamat terverifikasi (Pondok Pinang)"},
+      {"id":"cg-s22","Kategori": "Senior", "Nomor CG": "CG 22", "Nama/Pemimpin CG": "Andi Kusharsoro & Nurlita Zebua", "Nama lokasi / area": "Vila Melati Mas, Pondok Cabe", "Latitude": -6.34582, "Longitude": 106.76451, "Status verifikasi": "Alamat terverifikasi (Pondok Cabe)"},
+      {"id":"cg-s24","Kategori": "Senior", "Nomor CG": "CG 24", "Nama/Pemimpin CG": "Stenly Ranti & Caecilia Dewi Arimbi", "Nama lokasi / area": "Jl. Madrasah Buntu No. 34, Fatmawati", "Latitude": -6.29984, "Longitude": 106.79388, "Status verifikasi": "Alamat terverifikasi (Fatmawati)"},
+      // Under Coach Heru - Hasti:
+      {"id":"cg-s27","Kategori": "Senior", "Nomor CG": "CG 27", "Nama/Pemimpin CG": "Wina Huijts", "Nama lokasi / area": "Kluster Kintamani, Vila Dago, Pamulang", "Latitude": -6.34215, "Longitude": 106.72895, "Status verifikasi": "Alamat terverifikasi (Vila Dago)"},
+      {"id":"cg-s28","Kategori": "Senior", "Nomor CG": "CG 28", "Nama/Pemimpin CG": "Dwi Prasetyo & Enni", "Nama lokasi / area": "Vila Pamulang UB No. 1A, Pamulang", "Latitude": -6.34988, "Longitude": 106.73812, "Status verifikasi": "Alamat terverifikasi (Vila Pamulang)"},
+      {"id":"cg-s31","Kategori": "Senior", "Nomor CG": "CG 31", "Nama/Pemimpin CG": "Toni Liem & Nana", "Nama lokasi / area": "Komplek Asia Afrika Blok A No. 5B, Ciputat", "Latitude": -6.30945, "Longitude": 106.74681, "Status verifikasi": "Alamat terverifikasi (Ciputat)"},
+      {"id":"cg-s39","Kategori": "Senior", "Nomor CG": "CG 39", "Nama/Pemimpin CG": "Frieda Lumanauw", "Nama lokasi / area": "Witanaharja, Jl. Puntadewa 85, Pamulang", "Latitude": -6.34651, "Longitude": 106.73955, "Status verifikasi": "Alamat terverifikasi (Witanaharja)"},
+      {"id":"cg-s41","Kategori": "Senior", "Nomor CG": "CG 41", "Nama/Pemimpin CG": "Fransmilian & Novita", "Nama lokasi / area": "Ciputat Nerada", "Latitude": -6.30752, "Longitude": 106.74823, "Status verifikasi": "Alamat terverifikasi (Ciputat Nerada)"},
+      // Under Coach Dede - Mien:
+      {"id":"cg-s06","Kategori": "Senior", "Nomor CG": "CG 06", "Nama/Pemimpin CG": "Heru Waluyo & Leonella Pesuarissa", "Nama lokasi / area": "Jl. Palapa 2 No. 12A, Pasar Minggu", "Latitude": -6.28495, "Longitude": 106.84085, "Status verifikasi": "Alamat terverifikasi (Pasar Minggu)"},
+      {"id":"cg-s08","Kategori": "Senior", "Nomor CG": "CG 08", "Nama/Pemimpin CG": "Dede W Siemarga & Mien Sutanto", "Nama lokasi / area": "Jl. Tebet Barat Dalam Raya 40B", "Latitude": -6.23612, "Longitude": 106.84882, "Status verifikasi": "Alamat terverifikasi (Tebet Barat)"},
+      {"id":"cg-s25","Kategori": "Senior", "Nomor CG": "CG 25", "Nama/Pemimpin CG": "Meilani Ho Suk Tjen", "Nama lokasi / area": "The Elements Apartment, Harmony Lobby, Epicentrum Kuningan", "Latitude": -6.21985, "Longitude": 106.83351, "Status verifikasi": "Alamat terverifikasi (Epicentrum Kuningan)"},
+      {"id":"cg-s52","Kategori": "Senior", "Nomor CG": "CG 52", "Nama/Pemimpin CG": "Paulina (Marco PM Kaligis)", "Nama lokasi / area": "Jl. Komando III/3 No. 9, Karet Kuningan", "Latitude": -6.21625, "Longitude": 106.82281, "Status verifikasi": "Alamat terverifikasi (Karet Kuningan)"},
+      {"id":"cg-s53","Kategori": "Senior", "Nomor CG": "CG 53", "Nama/Pemimpin CG": "Ing Hoa", "Nama lokasi / area": "AEON Mall Tanjung Barat (Sementara)", "Latitude": -6.30615, "Longitude": 106.84275, "Status verifikasi": "Alamat terverifikasi (Tanjung Barat)"},
+      // Under Coach Sugiarto & Devi:
+      {"id":"cg-s40","Kategori": "Senior", "Nomor CG": "CG 40", "Nama/Pemimpin CG": "Edwin Harold & Ika Indayanti", "Nama lokasi / area": "Discovery Terra VI Blok E-2, Bintaro Jaya", "Latitude": -6.27515, "Longitude": 106.71355, "Status verifikasi": "Alamat terverifikasi (Discovery Terra)"},
+      {"id":"cg-s36","Kategori": "Senior", "Nomor CG": "CG 36", "Nama/Pemimpin CG": "Sukardi & Maryanny Hiu", "Nama lokasi / area": "GMS Gandaria City Lt. 3", "Latitude": -6.24425, "Longitude": 106.78361, "Status verifikasi": "Alamat terverifikasi (Gandaria City)"},
+      {"id":"cg-s29","Kategori": "Senior", "Nomor CG": "CG 29", "Nama/Pemimpin CG": "Sugiarto Budiman & Evelina Devi", "Nama lokasi / area": "Jl. Kucica IV Blok JG 9/22, Sektor 9, Bintaro Jaya", "Latitude": -6.27365, "Longitude": 106.72145, "Status verifikasi": "Alamat terverifikasi (Kucica Bintaro)"},
+      {"id":"cg-s26","Kategori": "Senior", "Nomor CG": "CG 26", "Nama/Pemimpin CG": "Bagus Budianto & Mathilda Budianto", "Nama lokasi / area": "Restoran Bakmi Jogja Mbak Titut, Bintaro Sektor 2", "Latitude": -6.26945, "Longitude": 106.75685, "Status verifikasi": "Alamat terverifikasi (Bintaro Sektor 2)"},
+      // --- END CG SENIOR ---
+      {"id":"cg-ya01","Kategori": "YA", "Nomor CG": "CG YA 01 / CG 01 - Sahabat Iman", "Nama/Pemimpin CG": "Titus", "Nama lokasi / area": "Benhil", "Latitude": -6.21503, "Longitude": 106.81795, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya02","Kategori": "YA", "Nomor CG": "CG YA 02 / CG 02 - Purified", "Nama/Pemimpin CG": "Rio", "Nama lokasi / area": "Benhil", "Latitude": -6.21503, "Longitude": 106.81795, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya03","Kategori": "YA", "Nomor CG": "CG YA 03", "Nama/Pemimpin CG": "Marcela", "Nama lokasi / area": "Sudirman Park", "Latitude": -6.20568, "Longitude": 106.81773, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya04","Kategori": "YA", "Nomor CG": "CG YA 04", "Nama/Pemimpin CG": "Faidatun", "Nama lokasi / area": "Sudirman - Karet", "Latitude": -6.21589, "Longitude": 106.82251, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya05","Kategori": "YA", "Nomor CG": "CG YA 05 / CG 05 - Agape", "Nama/Pemimpin CG": "Maya", "Nama lokasi / area": "Karet - Kuningan", "Latitude": -6.2187, "Longitude": 106.82491, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya06","Kategori": "YA", "Nomor CG": "CG YA 06", "Nama/Pemimpin CG": "Ardianto", "Nama lokasi / area": "Karet - Semanggi", "Latitude": -6.21537, "Longitude": 106.82219, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya07","Kategori": "YA", "Nomor CG": "CG YA 07", "Nama/Pemimpin CG": "Caroline", "Nama lokasi / area": "Permata Hijau", "Latitude": -6.23023, "Longitude": 106.78337, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya08","Kategori": "YA", "Nomor CG": "CG YA 08", "Nama/Pemimpin CG": "Christina", "Nama lokasi / area": "Setiabudi", "Latitude": -6.20794, "Longitude": 106.82358, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya09","Kategori": "YA", "Nomor CG": "CG YA 09", "Nama/Pemimpin CG": "Yonas", "Nama lokasi / area": "Setiabudi", "Latitude": -6.20794, "Longitude": 106.82358, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya10","Kategori": "YA", "Nomor CG": "CG YA 10", "Nama/Pemimpin CG": "Widya", "Nama lokasi / area": "Setiabudi", "Latitude": -6.20794, "Longitude": 106.82358, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya13","Kategori": "YA", "Nomor CG": "CG YA 13", "Nama/Pemimpin CG": "Fandy", "Nama lokasi / area": "Cipadu", "Latitude": -6.23761, "Longitude": 106.73587, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya14","Kategori": "YA", "Nomor CG": "CG YA 14", "Nama/Pemimpin CG": "Jane", "Nama lokasi / area": "Karet - Kuningan", "Latitude": -6.2187, "Longitude": 106.82491, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya15","Kategori": "YA", "Nomor CG": "CG YA 15", "Nama/Pemimpin CG": "Gloria", "Nama lokasi / area": "Senayan", "Latitude": -6.22765, "Longitude": 106.8127, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya16","Kategori": "YA", "Nomor CG": "CG YA 16", "Nama/Pemimpin CG": "Ivan", "Nama lokasi / area": "Tanjung Barat", "Latitude": -6.30943, "Longitude": 106.85058, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya17","Kategori": "YA", "Nomor CG": "CG YA 17", "Nama/Pemimpin CG": "Yosie", "Nama lokasi / area": "Benhil", "Latitude": -6.21503, "Longitude": 106.81795, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya18","Kategori": "YA", "Nomor CG": "CG YA 18", "Nama/Pemimpin CG": "Joshua", "Nama lokasi / area": "Semanggi - Setiabudi", "Latitude": -6.21537, "Longitude": 106.82219, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya19r","Kategori": "YA", "Nomor CG": "CG YA 19 - Ruang", "Nama/Pemimpin CG": "Enrico - Sophia", "Nama lokasi / area": "Kemang", "Latitude": -6.25921, "Longitude": 106.82587, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya19g","Kategori": "YA", "Nomor CG": "CG YA 19 - Grow", "Nama/Pemimpin CG": "Nabila", "Nama lokasi / area": "Gandaria City", "Latitude": -6.24422, "Longitude": 106.78348, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya11","Kategori": "YA", "Nomor CG": "CG YA 11", "Nama/Pemimpin CG": "Tejo", "Nama lokasi / area": "Kebayoran Lama", "Latitude": -6.25872, "Longitude": 106.77594, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya12","Kategori": "YA", "Nomor CG": "CG YA 12 - Shaping Heroes", "Nama/Pemimpin CG": "Joan", "Nama lokasi / area": "Cinere", "Latitude": -6.33609, "Longitude": 106.78834, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya21","Kategori": "YA", "Nomor CG": "CG YA 21 - Light Generation", "Nama/Pemimpin CG": "Suwendy", "Nama lokasi / area": "Bangka", "Latitude": -6.2625, "Longitude": 106.818, "Status verifikasi": "Perlu verifikasi titik (Auto-referenced)"},
+      {"id":"cg-ya22","Kategori": "YA", "Nomor CG": "CG YA 22 - Ebenhaezer", "Nama/Pemimpin CG": "Gabriella", "Nama lokasi / area": "Kebayoran Lama", "Latitude": -6.24861, "Longitude": 106.77778, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya23","Kategori": "YA", "Nomor CG": "CG YA 23 - Precious", "Nama/Pemimpin CG": "Alice", "Nama lokasi / area": "Pasar Minggu", "Latitude": -6.28576, "Longitude": 106.84024, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya24","Kategori": "YA", "Nomor CG": "CG YA 24 - Full Heart", "Nama/Pemimpin CG": "Florance", "Nama lokasi / area": "Pondok Indah", "Latitude": -6.26964, "Longitude": 106.77595, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya26","Kategori": "YA", "Nomor CG": "CG YA 26 - Bring Joy", "Nama/Pemimpin CG": "Billy", "Nama lokasi / area": "Kebayoran Lama", "Latitude": -6.24861, "Longitude": 106.77778, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya27","Kategori": "YA", "Nomor CG": "CG YA 27 - House of Grace", "Nama/Pemimpin CG": "Sylvia", "Nama lokasi / area": "SCBD", "Latitude": -6.2262, "Longitude": 106.8098, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya28","Kategori": "YA", "Nomor CG": "CG YA 28 - Open Up", "Nama/Pemimpin CG": "Novriani", "Nama lokasi / area": "Gandaria City", "Latitude": -6.24422, "Longitude": 106.78348, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya29","Kategori": "YA", "Nomor CG": "CG YA 29 - Intan", "Nama/Pemimpin CG": "Ella", "Nama lokasi / area": "Kebayoran Baru", "Latitude": -6.24444, "Longitude": 106.8, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya30","Kategori": "YA", "Nomor CG": "CG YA 30 - Mercy", "Nama/Pemimpin CG": "Gunarti", "Nama lokasi / area": "Kebayoran Lama", "Latitude": -6.24861, "Longitude": 106.77778, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya31","Kategori": "YA", "Nomor CG": "CG YA 31 - Fulfiled", "Nama/Pemimpin CG": "Devi", "Nama lokasi / area": "Bangka - Mampang", "Latitude": -6.25921, "Longitude": 106.82587, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya32","Kategori": "YA", "Nomor CG": "CG YA 32 - Presence", "Nama/Pemimpin CG": "Regita", "Nama lokasi / area": "Gandaria City", "Latitude": -6.24422, "Longitude": 106.78348, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya33","Kategori": "YA", "Nomor CG": "CG YA 33 - Imago Dei", "Nama/Pemimpin CG": "Andy", "Nama lokasi / area": "Bangka - Mampang", "Latitude": -6.25921, "Longitude": 106.82587, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya34","Kategori": "YA", "Nomor CG": "CG YA 34", "Nama/Pemimpin CG": "Selomita", "Nama lokasi / area": "Pondok Labu", "Latitude": -6.31932, "Longitude": 106.79142, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya35","Kategori": "YA", "Nomor CG": "CG YA 35", "Nama/Pemimpin CG": "Sansan", "Nama lokasi / area": "Cilandak", "Latitude": -6.28374, "Longitude": 106.78305, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya36","Kategori": "YA", "Nomor CG": "CG YA 36 - Overcome", "Nama/Pemimpin CG": "Reni Riaman", "Nama lokasi / area": "Pondok Labu", "Latitude": -6.30625, "Longitude": 106.79855, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya37","Kategori": "YA", "Nomor CG": "CG YA 37 - Fruitful", "Nama/Pemimpin CG": "Dimas", "Nama lokasi / area": "Cilandak", "Latitude": -6.28204, "Longitude": 106.79193, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya38","Kategori": "YA", "Nomor CG": "CG YA 38 - Connected", "Nama/Pemimpin CG": "Lala", "Nama lokasi / area": "Kebayoran Lama", "Latitude": -6.24861, "Longitude": 106.77778, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya39","Kategori": "YA", "Nomor CG": "CG YA 39", "Nama/Pemimpin CG": "Naomi", "Nama lokasi / area": "Gandaria City", "Latitude": -6.24422, "Longitude": 106.78348, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya40","Kategori": "YA", "Nomor CG": "CG YA 40 - Faithfull", "Nama/Pemimpin CG": "Mira", "Nama lokasi / area": "Kebayoran Baru", "Latitude": -6.24444, "Longitude": 106.8, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya41","Kategori": "YA", "Nomor CG": "CG YA 41 - Greace", "Nama/Pemimpin CG": "Novita", "Nama lokasi / area": "Kebayoran Baru", "Latitude": -6.24444, "Longitude": 106.8, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya42","Kategori": "YA", "Nomor CG": "CG YA 42 - Star Multiplier", "Nama/Pemimpin CG": "Mariyanti", "Nama lokasi / area": "Gandaria City", "Latitude": -6.24422, "Longitude": 106.78348, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya43","Kategori": "YA", "Nomor CG": "CG YA 43", "Nama/Pemimpin CG": "Stefanus", "Nama lokasi / area": "Casablanca", "Latitude": -6.21957, "Longitude": 106.84066, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya44","Kategori": "YA", "Nomor CG": "CG YA 44", "Nama/Pemimpin CG": "Panida", "Nama lokasi / area": "Tebet - Setiabudi", "Latitude": -6.22035, "Longitude": 106.83845, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya45","Kategori": "YA", "Nomor CG": "CG YA 45", "Nama/Pemimpin CG": "Seini", "Nama lokasi / area": "Fatmawati", "Latitude": -6.29665, "Longitude": 106.79699, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya46","Kategori": "YA", "Nomor CG": "CG YA 46 - Precious", "Nama/Pemimpin CG": "Arisma", "Nama lokasi / area": "Gandaria City", "Latitude": -6.24422, "Longitude": 106.78348, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya47","Kategori": "YA", "Nomor CG": "CG YA 47", "Nama/Pemimpin CG": "Eva", "Nama lokasi / area": "Lebak Bulus", "Latitude": -6.30447, "Longitude": 106.78442, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya48","Kategori": "YA", "Nomor CG": "CG YA 48", "Nama/Pemimpin CG": "Filia", "Nama lokasi / area": "Tanjung Barat", "Latitude": -6.30943, "Longitude": 106.85058, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya49","Kategori": "YA", "Nomor CG": "CG YA 49", "Nama/Pemimpin CG": "Kesia", "Nama lokasi / area": "Kebayoran Baru", "Latitude": -6.24444, "Longitude": 106.8, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya50","Kategori": "YA", "Nomor CG": "CG YA 50", "Nama/Pemimpin CG": "Maria", "Nama lokasi / area": "Tebet", "Latitude": -6.23075, "Longitude": 106.85329, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya51","Kategori": "YA", "Nomor CG": "CG YA 51", "Nama/Pemimpin CG": "David", "Nama lokasi / area": "Permata Hijau", "Latitude": -6.23023, "Longitude": 106.78337, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya52","Kategori": "YA", "Nomor CG": "CG YA 52", "Nama/Pemimpin CG": "Marzheyba", "Nama lokasi / area": "Tanjung Barat", "Latitude": -6.30943, "Longitude": 106.85058, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya53","Kategori": "YA", "Nomor CG": "CG YA 53", "Nama/Pemimpin CG": "Meilani", "Nama lokasi / area": "Kebayoran Lama", "Latitude": -6.24861, "Longitude": 106.77778, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya54","Kategori": "YA", "Nomor CG": "CG YA 54 - Adulam", "Nama/Pemimpin CG": "Gevanmoy", "Nama lokasi / area": "SCBD", "Latitude": -6.2262, "Longitude": 106.8098, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya55","Kategori": "YA", "Nomor CG": "CG YA 55", "Nama/Pemimpin CG": "Yosevina", "Nama lokasi / area": "Tanjung Barat", "Latitude": -6.30943, "Longitude": 106.85058, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya56","Kategori": "YA", "Nomor CG": "CG YA 56", "Nama/Pemimpin CG": "Nanda", "Nama lokasi / area": "Semanggi", "Latitude": -6.21537, "Longitude": 106.82219, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya57","Kategori": "YA", "Nomor CG": "CG YA 57", "Nama/Pemimpin CG": "Zefanya", "Nama lokasi / area": "Tebet - Setiabudi", "Latitude": -6.22035, "Longitude": 106.83845, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya58","Kategori": "YA", "Nomor CG": "CG YA 58", "Nama/Pemimpin CG": "Willman", "Nama lokasi / area": "Lebak Bulus", "Latitude": -6.30447, "Longitude": 106.78442, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya59","Kategori": "YA", "Nomor CG": "CG YA 59 - Resonance", "Nama/Pemimpin CG": "Isabella", "Nama lokasi / area": "Duren Tiga", "Latitude": -6.2541, "Longitude": 106.83675, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya60","Kategori": "YA", "Nomor CG": "CG YA 60 - Lion of Judah", "Nama/Pemimpin CG": "Rini", "Nama lokasi / area": "Pondok Indah", "Latitude": -6.26964, "Longitude": 106.77595, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya61","Kategori": "YA", "Nomor CG": "CG YA 61 - Trailblazers", "Nama/Pemimpin CG": "Michelle", "Nama lokasi / area": "Gandaria City", "Latitude": -6.24422, "Longitude": 106.78348, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya62","Kategori": "YA", "Nomor CG": "CG YA 62 - Faitful", "Nama/Pemimpin CG": "Sylvia", "Nama lokasi / area": "Gandaria City", "Latitude": -6.24422, "Longitude": 106.78348, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya63","Kategori": "YA", "Nomor CG": "CG YA 63 - Faith with Action", "Nama/Pemimpin CG": "Kaleb", "Nama lokasi / area": "Cilandak", "Latitude": -6.28204, "Longitude": 106.79193, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya64","Kategori": "YA", "Nomor CG": "CG YA 64 - Embrace by God", "Nama/Pemimpin CG": "Nita", "Nama lokasi / area": "Lebak Bulus", "Latitude": -6.30447, "Longitude": 106.78442, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya65","Kategori": "YA", "Nomor CG": "CG YA 65 - Selah", "Nama/Pemimpin CG": "Arisma", "Nama lokasi / area": "Kemang", "Latitude": -6.25921, "Longitude": 106.82587, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya66","Kategori": "YA", "Nomor CG": "CG YA 66", "Nama/Pemimpin CG": "Shyanti", "Nama lokasi / area": "Kebayoran Baru", "Latitude": -6.24444, "Longitude": 106.8, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya67","Kategori": "YA", "Nomor CG": "CG YA 67", "Nama/Pemimpin CG": "Nicho", "Nama lokasi / area": "Benhil", "Latitude": -6.21503, "Longitude": 106.81795, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya68","Kategori": "YA", "Nomor CG": "CG YA 68", "Nama/Pemimpin CG": "Dorce", "Nama lokasi / area": "Benhil", "Latitude": -6.21503, "Longitude": 106.81795, "Status verifikasi": "Koordinat area representatif"},
+      {"id":"cg-ya69","Kategori": "YA", "Nomor CG": "CG YA 69", "Nama/Pemimpin CG": "Julianto", "Nama lokasi / area": "Kuningan", "Latitude": -6.2275, "Longitude": 106.83034, "Status verifikasi": "Koordinat area representatif"}
+    ];
+
+    // Load active data from localStorage or fallback
+    let currentData = (() => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (err) {}
+      return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    })();
+
+    const COLOR_MAP = {
+      Family: { hex: '#c084fc', border: 'border-purple-400', bg: 'bg-purple-950/60', text: 'text-purple-300' },
+      Senior: { hex: '#fbbf24', border: 'border-amber-400',  bg: 'bg-amber-950/60',  text: 'text-amber-300' },
+      YA:     { hex: '#22d3ee', border: 'border-cyan-400',   bg: 'bg-cyan-950/60',   text: 'text-cyan-300' }
+    };
+
+    const VIEWS = {
+      jaksel: { center: [-6.285, 106.815], zoom: 11.85, duration: 2.0, scopeText: 'LOCAL HIGH-DENSITY CLUSTER (JAKARTA SELATAN)' },
+      jakarta: { center: [-6.225, 106.845], zoom: 11.0, duration: 2.2, scopeText: 'PROVINCIAL SCOPE (DKI JAKARTA)' },
+      indonesia: { center: [-2.2, 117.8], zoom: 5, duration: 3.2, scopeText: 'NATIONAL ARCHIPELAGO VISION (REPUBLIC OF INDONESIA)' }
+    };
+
+    let activeCategory = 'All';
+    let markersList = [];
+    let nationalBeaconMarker = null;
+    let jakartaBoundaryLayer = null;
+    let jakselBoundaryLayer = null;
+    let selectedCG = null;
+    let isEditMode = false;
+    let bottomControlsVisible = true;
+
+    // Process overlapping coordinates
+    function processCoordinates(dataset) {
+      const coordBuckets = {};
+      dataset.forEach((item, idx) => {
+        if (!item.id) item.id = `node-${idx}-${Date.now()}`;
+        const key = `${Number(item.Latitude).toFixed(4)}_${Number(item.Longitude).toFixed(4)}`;
+        if (!coordBuckets[key]) coordBuckets[key] = [];
+        coordBuckets[key].push(item);
+      });
+
+      const list = [];
+      Object.values(coordBuckets).forEach(bucket => {
+        const count = bucket.length;
+        bucket.forEach((item, idx) => {
+          let lat = Number(item.Latitude);
+          let lng = Number(item.Longitude);
+
+          if (count > 1) {
+            const angle = idx * (2 * Math.PI / count) + (idx * 0.4);
+            const radius = 0.0035 + (idx * 0.0007);
+            lat += radius * Math.cos(angle);
+            lng += radius * Math.sin(angle);
+          }
+
+          list.push({
+            ...item,
+            displayLat: lat,
+            displayLng: lng,
+            coLocated: bucket.filter(b => b.id !== item.id)
+          });
+        });
+      });
+      return list;
+    }
+
+    let PROCESSED_DATA = processCoordinates(currentData);
+
+    // Save to localStorage & refresh
+    function persistData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+      } catch (e) {
+        console.error('Storage full or unavailable', e);
+      }
+      PROCESSED_DATA = processCoordinates(currentData);
+      renderMarkers();
+    }
+
+    // National Epicenter Beacon Marker
+    function setupNationalBeacon() {
+      const beaconIcon = L.divIcon({
+        className: 'national-beacon-wrapper',
+        html: `
+          <div class="national-beacon">
+            <div class="beacon-wave-1"></div>
+            <div class="beacon-wave-2"></div>
+            <div class="beacon-wave-3"></div>
+            <div class="beacon-dot"></div>
+          </div>
+        `,
+        iconSize: [60, 60],
+        iconAnchor: [30, 30]
+      });
+
+      nationalBeaconMarker = L.marker([-6.22, 106.82], {
+        icon: beaconIcon,
+        interactive: false
+      });
+    }
+
+    // Render Markers
+    function renderMarkers() {
+      markersList.forEach(m => map.removeLayer(m));
+      markersList = [];
+
+      const filtered = PROCESSED_DATA.filter(item => {
+        return activeCategory === 'All' || item.Kategori === activeCategory;
+      });
+
+      filtered.forEach(cg => {
+        const theme = COLOR_MAP[cg.Kategori] || COLOR_MAP.YA;
+        const markerIcon = L.divIcon({
+          className: 'custom-node-icon',
+          html: `
+            <div class="custom-marker" style="color: ${theme.hex};">
+              <div class="marker-outer-orbit"></div>
+              <div class="marker-ring"></div>
+              <div class="marker-core" style="background-color: ${theme.hex};"></div>
+            </div>
+          `,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+
+        const marker = L.marker([cg.displayLat, cg.displayLng], { icon: markerIcon });
+        
+        marker.bindTooltip(`
+          <div style="font-family: inherit;">
+            <div style="font-size: 9px; letter-spacing: 0.1em; color: ${theme.hex}; font-weight: 700; text-transform: uppercase;">
+              ${cg.Kategori}
+            </div>
+            <div style="font-weight: 800; font-size: 13px; color: #fff; margin: 1px 0;">
+              ${cg['Nomor CG']}
+            </div>
+            <div style="font-size: 11px; color: #94a3b8;">
+              ${cg['Nama/Pemimpin CG'] || 'Leader Not Listed'}
+            </div>
+            <div style="font-size: 10px; color: #38bdf8; margin-top: 2px;">
+              📍 ${cg['Nama lokasi / area']}
+            </div>
+          </div>
+        `, {
+          direction: 'top',
+          offset: [0, -10],
+          opacity: 0.95
+        });
+
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          inspectCG(cg);
+        });
+
+        marker.addTo(map);
+        markersList.push(marker);
+      });
+
+      updateMarkerVisibilityByZoom();
+    }
+
+    function updateMarkerVisibilityByZoom() {
+      const currentZoom = map.getZoom();
+
+      if (currentZoom <= 7) {
+        if (nationalBeaconMarker && !map.hasLayer(nationalBeaconMarker)) nationalBeaconMarker.addTo(map);
+        markersList.forEach(m => { if (m._icon) m._icon.style.opacity = '0.15'; });
+      } else {
+        if (nationalBeaconMarker && map.hasLayer(nationalBeaconMarker)) map.removeLayer(nationalBeaconMarker);
+        markersList.forEach(m => { if (m._icon) m._icon.style.opacity = '1'; });
+      }
+
+      const scopeTitle = document.getElementById('scope-title');
+      if (scopeTitle) {
+        if (currentZoom >= 12) scopeTitle.textContent = VIEWS.jaksel.scopeText;
+        else if (currentZoom >= 8.5) scopeTitle.textContent = VIEWS.jakarta.scopeText;
+        else scopeTitle.textContent = VIEWS.indonesia.scopeText;
+      }
+    }
+
+    // Boundaries
+    const JAKARTA_BORDER_COORDS = [
+      [-6.088, 106.695], [-6.095, 106.745], [-6.115, 106.775], [-6.112, 106.825],
+      [-6.105, 106.885], [-6.098, 106.925], [-6.125, 106.972], [-6.155, 106.975],
+      [-6.205, 106.962], [-6.262, 106.945], [-6.315, 106.915], [-6.358, 106.905],
+      [-6.370, 106.872], [-6.368, 106.835], [-6.355, 106.805], [-6.335, 106.782],
+      [-6.285, 106.762], [-6.245, 106.735], [-6.208, 106.720], [-6.158, 106.695],
+      [-6.115, 106.685], [-6.088, 106.695]
+    ];
+
+    const JAKSEL_BORDER_COORDS = [
+      [-6.208, 106.795], [-6.216, 106.822], [-6.223, 106.848], [-6.230, 106.862],
+      [-6.248, 106.865], [-6.275, 106.858], [-6.305, 106.855], [-6.345, 106.848],
+      [-6.368, 106.832], [-6.355, 106.802], [-6.335, 106.782], [-6.310, 106.778],
+      [-6.285, 106.762], [-6.255, 106.755], [-6.235, 106.768], [-6.220, 106.778],
+      [-6.208, 106.795]
+    ];
+
+    function setupJakartaBoundary() {
+      const boundaryGroup = L.featureGroup();
+      const outerGlow = L.polygon(JAKARTA_BORDER_COORDS, {
+        color: '#06b6d4', weight: 8, opacity: 0.35, fillColor: '#0891b2', fillOpacity: 0.04, dashArray: '8, 6', interactive: false
+      });
+      const coreBeam = L.polygon(JAKARTA_BORDER_COORDS, {
+        color: '#22d3ee', weight: 3, opacity: 0.95, fillOpacity: 0, className: 'neon-boundary-path', interactive: false
+      });
+      boundaryGroup.addLayer(outerGlow);
+      boundaryGroup.addLayer(coreBeam);
+      jakartaBoundaryLayer = boundaryGroup;
+    }
+
+    function showJakartaBoundary(show) {
+      if (!jakartaBoundaryLayer) return;
+      if (show) { if (!map.hasLayer(jakartaBoundaryLayer)) map.addLayer(jakartaBoundaryLayer); }
+      else { if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer); }
+    }
+
+    function setupJakselBoundary() {
+      const boundaryGroup = L.featureGroup();
+      const outerGlow = L.polygon(JAKSEL_BORDER_COORDS, {
+        color: '#0284c7', weight: 9, opacity: 0.38, fillColor: '#0369a1', fillOpacity: 0.05, dashArray: '7, 6', interactive: false
+      });
+      const coreBeam = L.polygon(JAKSEL_BORDER_COORDS, {
+        color: '#38bdf8', weight: 3.5, opacity: 0.95, fillOpacity: 0, className: 'neon-jaksel-path', interactive: false
+      });
+      boundaryGroup.addLayer(outerGlow);
+      boundaryGroup.addLayer(coreBeam);
+      jakselBoundaryLayer = boundaryGroup;
+    }
+
+    function showJakselBoundary(show) {
+      if (!jakselBoundaryLayer) return;
+      if (show) { if (!map.hasLayer(jakselBoundaryLayer)) map.addLayer(jakselBoundaryLayer); }
+      else { if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer); }
+    }
+
+    function setActivePill(pillId) {
+      ['btn-home', 'pill-jaksel', 'pill-jakarta', 'pill-indonesia'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+          if (id === pillId) { btn.classList.add('active'); btn.classList.remove('text-slate-300'); }
+          else { btn.classList.remove('active'); btn.classList.add('text-slate-300'); }
+        }
+      });
+    }
+
+    let toastTimer = null;
+    function showToast(message) {
+      const toast = document.getElementById('toast-notify');
+      const text = document.getElementById('toast-text');
+      if (!toast || !text) return;
+      text.textContent = message;
+      toast.classList.remove('opacity-0', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }, 2200);
+    }
+
+    function toggleBottomControls(show) {
+      const controller = document.getElementById('bottom-controller');
+      const btnIcon = document.getElementById('btn-c-icon');
+      const btnText = document.getElementById('btn-c-text');
+
+      if (typeof show === 'undefined') bottomControlsVisible = !bottomControlsVisible;
+      else bottomControlsVisible = !!show;
+
+      if (bottomControlsVisible) {
+        if (controller) {
+          controller.classList.remove('opacity-0', 'translate-y-16', 'pointer-events-none');
+          controller.classList.add('opacity-100', 'translate-y-0');
+        }
+        if (btnIcon) btnIcon.textContent = '▼';
+        if (btnText) btnText.textContent = 'HIDE [C]';
+        showToast('🧭 Navigation Controls Shown [C]');
+      } else {
+        if (controller) {
+          controller.classList.add('opacity-0', 'translate-y-16', 'pointer-events-none');
+          controller.classList.remove('opacity-100', 'translate-y-0');
+        }
+        if (btnIcon) btnIcon.textContent = '▲';
+        if (btnText) btnText.textContent = 'MENU [C]';
+      }
+    }
+    window.toggleBottomControls = toggleBottomControls;
+
+    function resetToHomeCommand() {
+      closeInspector();
+      filterCategory('All');
+      setActivePill('btn-home');
+      showJakartaBoundary(false);
+      showJakselBoundary(false);
+      map.closePopup();
+      map.flyTo(VIEWS.jaksel.center, VIEWS.jaksel.zoom, { animate: true, duration: 1.5 });
+      const scopeEl = document.getElementById('scope-title');
+      if (scopeEl) scopeEl.textContent = 'LOCAL HIGH-DENSITY CLUSTER (JAKARTA SELATAN)';
+      showToast('🏠 Home Command Center Reset');
+      toggleBottomControls(false);
+    }
+
+    function flyToJaksel() {
+      closeInspector();
+      showJakartaBoundary(false);
+      showJakselBoundary(true);
+      setActivePill('pill-jaksel');
+      map.flyTo(VIEWS.jaksel.center, VIEWS.jaksel.zoom, { duration: VIEWS.jaksel.duration });
+      toggleBottomControls(false);
+    }
+
+    function flyToJakarta() {
+      closeInspector();
+      showJakselBoundary(false);
+      showJakartaBoundary(true);
+      setActivePill('pill-jakarta');
+      map.flyTo(VIEWS.jakarta.center, VIEWS.jakarta.zoom, { duration: VIEWS.jakarta.duration });
+      toggleBottomControls(false);
+    }
+
+    function flyToArchipelago() {
+      closeInspector();
+      showJakselBoundary(false);
+      showJakartaBoundary(false);
+      setActivePill('pill-indonesia');
+      map.flyTo(VIEWS.indonesia.center, VIEWS.indonesia.zoom, { duration: VIEWS.indonesia.duration });
+      toggleBottomControls(false);
+    }
+
+    /* =========================================================
+       INSPECTOR & LIVE NODE EDITING ENGINE
+       ========================================================= */
+    function inspectCG(cg) {
+      selectedCG = cg;
+      isEditMode = false;
+      renderInspectorView();
+
+      document.getElementById('btn-focus-node').onclick = () => {
+        map.flyTo([cg.displayLat, cg.displayLng], 15, { duration: 1.8 });
+      };
+
+      document.getElementById('inspector').classList.remove('translate-x-[115%]');
+    }
+
+    function renderInspectorView() {
+      if (!selectedCG) return;
+      const theme = COLOR_MAP[selectedCG.Kategori] || COLOR_MAP.YA;
+
+      // View Elements
+      const badge = document.getElementById('insp-badge');
+      badge.className = `inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold border ${theme.border} ${theme.bg} ${theme.text}`;
+      document.getElementById('insp-category').textContent = selectedCG.Kategori.toUpperCase();
+      document.getElementById('insp-name').textContent = selectedCG['Nomor CG'];
+      document.getElementById('insp-leader').textContent = selectedCG['Nama/Pemimpin CG'] || 'Leader Not Listed';
+      document.getElementById('insp-area').textContent = `${selectedCG['Nama lokasi / area']}, Jakarta Selatan`;
+      document.getElementById('insp-lat').textContent = Number(selectedCG.Latitude).toFixed(5);
+      document.getElementById('insp-lng').textContent = Number(selectedCG.Longitude).toFixed(5);
+      document.getElementById('insp-status').textContent = selectedCG['Status verifikasi'] || 'Koordinat area representatif.';
+
+      // Co-located list
+      const coList = document.getElementById('co-located-list');
+      const coCount = document.getElementById('co-count');
+      coList.innerHTML = '';
+      
+      if (selectedCG.coLocated && selectedCG.coLocated.length > 0) {
+        coCount.textContent = `${selectedCG.coLocated.length} CGs`;
+        selectedCG.coLocated.forEach(other => {
+          const item = document.createElement('div');
+          item.className = 'px-3 py-2 rounded-lg bg-black/40 border border-slate-800 hover:border-cyan-500/50 cursor-pointer flex items-center justify-between transition-colors';
+          item.innerHTML = `
+            <div>
+              <span class="font-bold text-slate-200">${other['Nomor CG']}</span>
+              <span class="text-[10px] text-slate-400 block">${other['Nama/Pemimpin CG']}</span>
+            </div>
+            <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">${other.Kategori}</span>
+          `;
+          item.onclick = () => inspectCG(other);
+          coList.appendChild(item);
+        });
+      } else {
+        coCount.textContent = 'None';
+        coList.innerHTML = '<div class="text-[11px] text-slate-500 py-1 italic">Tunggal (tidak ada CG lain di titik area ini)</div>';
+      }
+
+      // Populate Edit Form Inputs as well
+      document.getElementById('edit-nomor').value = selectedCG['Nomor CG'] || '';
+      document.getElementById('edit-kategori').value = selectedCG.Kategori || 'YA';
+      document.getElementById('edit-leader').value = selectedCG['Nama/Pemimpin CG'] || '';
+      document.getElementById('edit-area').value = selectedCG['Nama lokasi / area'] || '';
+      document.getElementById('edit-lat').value = selectedCG.Latitude;
+      document.getElementById('edit-lng').value = selectedCG.Longitude;
+      document.getElementById('edit-status').value = selectedCG['Status verifikasi'] || 'Koordinat area representatif';
+
+      // Set View State
+      document.getElementById('inspector-view-mode').classList.remove('hidden');
+      document.getElementById('inspector-view-footer').classList.remove('hidden');
+      document.getElementById('inspector-edit-mode').classList.add('hidden');
+      document.getElementById('btn-mode-label').textContent = 'EDIT DATA';
+      document.getElementById('btn-mode-icon').textContent = '✏️';
+      document.getElementById('insp-header-title').textContent = 'CG Profile Details';
+    }
+
+    function toggleEditMode() {
+      if (!selectedCG) return;
+      isEditMode = !isEditMode;
+
+      const viewMode = document.getElementById('inspector-view-mode');
+      const viewFooter = document.getElementById('inspector-view-footer');
+      const editMode = document.getElementById('inspector-edit-mode');
+      const modeLabel = document.getElementById('btn-mode-label');
+      const modeIcon = document.getElementById('btn-mode-icon');
+      const headerTitle = document.getElementById('insp-header-title');
+
+      if (isEditMode) {
+        viewMode.classList.add('hidden');
+        viewFooter.classList.add('hidden');
+        editMode.classList.remove('hidden');
+        modeLabel.textContent = 'VIEW MODE';
+        modeIcon.textContent = '👁️';
+        headerTitle.textContent = 'Editing: ' + selectedCG['Nomor CG'];
+      } else {
+        renderInspectorView();
+      }
+    }
+
+    function cancelEditMode() {
+      isEditMode = false;
+      renderInspectorView();
+    }
+
+    function saveNodeEdits(e) {
+      e.preventDefault();
+      if (!selectedCG) return;
+
+      const newNomor = document.getElementById('edit-nomor').value.trim();
+      const newKategori = document.getElementById('edit-kategori').value;
+      const newLeader = document.getElementById('edit-leader').value.trim();
+      const newArea = document.getElementById('edit-area').value.trim();
+      const newLat = parseFloat(document.getElementById('edit-lat').value);
+      const newLng = parseFloat(document.getElementById('edit-lng').value);
+      const newStatus = document.getElementById('edit-status').value.trim();
+
+      // Find index in master currentData
+      const idx = currentData.findIndex(item => item.id === selectedCG.id);
+      if (idx !== -1) {
+        currentData[idx]['Nomor CG'] = newNomor;
+        currentData[idx].Kategori = newKategori;
+        currentData[idx]['Nama/Pemimpin CG'] = newLeader;
+        currentData[idx]['Nama lokasi / area'] = newArea;
+        currentData[idx].Latitude = newLat;
+        currentData[idx].Longitude = newLng;
+        currentData[idx]['Status verifikasi'] = newStatus;
+
+        persistData();
+
+        // Find updated object in PROCESSED_DATA
+        const updated = PROCESSED_DATA.find(p => p.id === selectedCG.id);
+        if (updated) selectedCG = updated;
+
+        isEditMode = false;
+        renderInspectorView();
+        showToast(`✅ Data ${newNomor} Berhasil Disimpan!`);
+      }
+    }
+
+    // Export current dataset as JSON
+    function exportDataJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentData, null, 2));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", `cg_jaksel_dataset_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(dlAnchor);
+      dlAnchor.click();
+      dlAnchor.remove();
+      showToast('📥 Dataset Berhasil Diunduh!');
+    }
+
+    // Reset back to factory default
+    function resetDataToFactory() {
+      if (confirm('Kembalikan seluruh data titik ke daftar awal bawaan? (Semua editan lokal akan direset)')) {
+        localStorage.removeItem(STORAGE_KEY);
+        currentData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        persistData();
+        closeInspector();
+        showToast('↺ Dataset Direset ke Awal');
+      }
+    }
+
+    function closeInspector() {
+      document.getElementById('inspector').classList.add('translate-x-[115%]');
+      selectedCG = null;
+      isEditMode = false;
+    }
+
+    function filterCategory(cat) {
+      activeCategory = cat;
+      renderMarkers();
+    }
+
+    function handleGlobalKeys(e) {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (['input', 'textarea', 'select'].includes(activeTag)) return;
+
+      const key = (e.key || '').toLowerCase();
+      const code = e.code || '';
+
+      if (key === 'h' || code === 'KeyH' || e.key === 'Home') {
+        e.preventDefault(); e.stopPropagation(); resetToHomeCommand();
+      } else if (key === 'j' || code === 'KeyJ' || key === '1' || code === 'Digit1') {
+        e.preventDefault(); e.stopPropagation(); flyToJaksel();
+      } else if (key === 'b' || code === 'KeyB' || key === '2' || code === 'Digit2') {
+        e.preventDefault(); e.stopPropagation(); flyToJakarta();
+      } else if (key === 'i' || code === 'KeyI' || key === '3' || code === 'Digit3') {
+        e.preventDefault(); e.stopPropagation(); flyToArchipelago();
+      } else if (key === 'c' || code === 'KeyC') {
+        e.preventDefault(); e.stopPropagation(); toggleBottomControls();
+      } else if (key === 'escape' || code === 'Escape') {
+        e.preventDefault(); closeInspector();
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeys, true);
+    document.addEventListener('keydown', handleGlobalKeys, true);
+
+    function ensureIframeFocus() {
+      try { window.focus(); } catch (err) {}
+    }
+    window.addEventListener('load', ensureIframeFocus);
+    document.addEventListener('click', ensureIframeFocus);
+    map.on('click', ensureIframeFocus);
+
+    const homeBtn = document.getElementById('btn-home');
+    if (homeBtn) homeBtn.onclick = (e) => { if (e) e.stopPropagation(); resetToHomeCommand(); };
+
+    const brandBtn = document.getElementById('btn-brand-home');
+    if (brandBtn) brandBtn.onclick = (e) => { if (e) e.stopPropagation(); resetToHomeCommand(); };
+
+    document.getElementById('pill-jaksel')?.addEventListener('click', (e) => { e.stopPropagation(); flyToJaksel(); });
+    document.getElementById('pill-jakarta')?.addEventListener('click', (e) => { e.stopPropagation(); flyToJakarta(); });
+    document.getElementById('pill-indonesia')?.addEventListener('click', (e) => { e.stopPropagation(); flyToArchipelago(); });
+
+    setupNationalBeacon();
+    setupJakartaBoundary();
+    setupJakselBoundary();
+    showJakselBoundary(false);
+    showJakartaBoundary(false);
+    renderMarkers();
+
+    function updateClock() {
+      const clockEl = document.getElementById('utc-clock');
+      if (!clockEl) return;
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour12: false });
+      clockEl.textContent = `${timeStr} WIB`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    window.addEventListener('resize', () => { map.invalidateSize(); });
+    setTimeout(() => { map.invalidateSize(); }, 250);
+    map.on('zoomend', () => { updateMarkerVisibilityByZoom(); });
+    map.on('click', () => { closeInspector(); });
+  </script>
+</body>
+</html>
