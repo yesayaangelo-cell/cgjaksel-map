@@ -485,7 +485,7 @@
         </button>
       </header>
 
-      <!-- Data Export / Sync Actions -->
+      <!-- Data Export / Sync Actions (Tanpa Tombol Reset) -->
       <div class="flex items-center gap-1.5 pointer-events-auto">
         <button onclick="fetchSheetData(true)" title="Muat ulang data terbaru dari Google Sheets"
           class="px-2.5 py-1 rounded-md glass-panel border border-cyan-500/30 text-[9px] font-mono text-slate-300 hover:text-cyan-200 hover:border-cyan-400 flex items-center gap-1 transition-all">
@@ -494,10 +494,6 @@
         <button onclick="exportDataJson()" title="Download updated dataset backup as JSON"
           class="px-2.5 py-1 rounded-md glass-panel border border-cyan-500/30 text-[9px] font-mono text-slate-300 hover:text-cyan-200 hover:border-cyan-400 flex items-center gap-1 transition-all">
           <span>💾 Backup</span>
-        </button>
-        <button onclick="resetDataToFactory()" title="Reset all changes back to initial list"
-          class="px-2 py-1 rounded-md glass-panel border border-rose-500/30 text-[9px] font-mono text-slate-400 hover:text-rose-300 hover:border-rose-400 transition-all">
-          <span>↺ Reset</span>
         </button>
       </div>
 
@@ -1446,17 +1442,6 @@
       dlAnchor.click();
       dlAnchor.remove();
       showToast('📥 Dataset Berhasil Diunduh!');
-    }
-
-    // Reset back to factory default
-    function resetDataToFactory() {
-      if (confirm('Kembalikan seluruh data titik ke daftar awal bawaan? (Semua editan lokal akan direset)')) {
-        localStorage.removeItem(STORAGE_KEY);
-        currentData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-        persistData();
-        closeInspector();
-        showToast('↺ Dataset Direset ke Awal');
-      }
     }
 
     function closeInspector() {
