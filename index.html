@@ -1114,7 +1114,7 @@
       });
     }
 
-    /* SISTEM TOAST KETERANGAN: BISA STAY LAMA & DITUTUP INSTAN */
+    /* SISTEM TOAST KETERANGAN */
     let toastTimer = null;
     let toastPendingTimer = null;
 
@@ -1186,7 +1186,7 @@
     window.toggleBottomControls = toggleBottomControls;
 
     /* =========================================================
-       AKSI NAVIGASI
+       AKSI NAVIGASI: IKON GEREJA TETAP AKTIF DI HOME, JAKSEL, & JAKARTA
        ========================================================= */
     function resetToHomeCommand() {
       closeInspector();
@@ -1199,6 +1199,7 @@
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
 
+      // Pastikan marker gereja selalu terpasang
       if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
         gmsChurchMarker.addTo(map);
       }
@@ -1206,6 +1207,7 @@
       updateScopeHeader('GMS GANDARIA CITY', 'GMS GANDARIA CITY');
       map.flyTo(GMS_GC_COORDS, 13.5, { animate: true, duration: 1.6 });
 
+      // Tampilkan kartu popup info di mode Home
       setTimeout(() => {
         if (gmsChurchMarker) gmsChurchMarker.openPopup();
       }, 1650);
@@ -1215,11 +1217,12 @@
 
     function flyToJaksel() {
       closeInspector();
-      map.closePopup();
+      map.closePopup(); // Tutup popup agar tidak menumpuk
       hideToastNow();
 
-      if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
-        map.removeLayer(gmsChurchMarker);
+      // IKON GMS TETAP DI-KEEP DI JAKSEL
+      if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
+        gmsChurchMarker.addTo(map);
       }
 
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
@@ -1235,11 +1238,12 @@
 
     function flyToJakarta() {
       closeInspector();
-      map.closePopup();
+      map.closePopup(); // Tutup popup agar tidak menumpuk
       hideToastNow();
 
-      if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
-        map.removeLayer(gmsChurchMarker);
+      // IKON GMS TETAP DI-KEEP DI JAKARTA
+      if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
+        gmsChurchMarker.addTo(map);
       }
 
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
@@ -1258,6 +1262,7 @@
       map.closePopup();
       hideToastNow();
 
+      // Hapus marker GMS khusus di skala Nasional agar fokus ke nusantara
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
       }
@@ -1466,7 +1471,7 @@
     document.addEventListener('click', ensureIframeFocus);
     map.on('click', () => {
       ensureIframeFocus();
-      hideToastNow(); // Klik peta bisa langsung menutup toast jika tidak ingin menunggu
+      hideToastNow();
     });
 
     const homeBtn = document.getElementById('btn-home');
