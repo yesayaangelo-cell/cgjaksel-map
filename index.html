@@ -428,7 +428,7 @@
     <div id="map"></div>
     <div class="cyber-grid absolute inset-0 z-[6] pointer-events-none opacity-40"></div>
 
-    <!-- TOAST KETERANGAN AREA YANG STAY LEBIH LAMA SETELAH PETA TERBUKA -->
+    <!-- TOAST KETERANGAN AREA UNTUK JAKSEL / DKI / INDONESIA -->
     <div id="toast-notify"
       class="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] opacity-0 pointer-events-none transition-all duration-500 transform -translate-y-2 glass-panel px-6 py-2.5 rounded-xl text-xs font-mono text-cyan-300 border-cyan-400/50 flex items-center gap-2.5 shadow-[0_0_40px_rgba(34,211,238,0.7)]">
       <span class="text-base animate-pulse">📍</span>
@@ -588,7 +588,7 @@
 
         <div id="inspector-view-mode" class="p-4 flex-1 overflow-y-auto space-y-3">
           <div id="insp-badge"
-            class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold border">
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold border ${theme.border} ${theme.bg} ${theme.text}">
             <span class="w-2 h-2 rounded-full bg-current"></span>
             <span id="insp-category">Young Adult</span>
           </div>
@@ -1114,9 +1114,19 @@
       });
     }
 
-    /* SISTEM TOAST KETERANGAN: DIBUAT STAY LEBIH LAMA (DEFAULT 7000ms = 7 DETIK) */
+    /* SISTEM TOAST KETERANGAN: BISA STAY LAMA & DITUTUP INSTAN */
     let toastTimer = null;
     let toastPendingTimer = null;
+
+    function hideToastNow() {
+      clearTimeout(toastPendingTimer);
+      clearTimeout(toastTimer);
+      const toast = document.getElementById('toast-notify');
+      if (toast) {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }
+    }
 
     function showToast(message, stayDuration = 7000) {
       const toast = document.getElementById('toast-notify');
@@ -1134,10 +1144,8 @@
       }, stayDuration);
     }
 
-    // Fungsi trigger keterangan yang menunggu animasi selesai (peta terbuka sempurna)
     function triggerScopeToastAfterFly(message, flyDurationMs) {
       clearTimeout(toastPendingTimer);
-      // Munculkan tepat saat animasi flyTo selesai, lalu stay 7 detik
       toastPendingTimer = setTimeout(() => {
         showToast(message, 7000);
       }, flyDurationMs);
@@ -1178,12 +1186,15 @@
     window.toggleBottomControls = toggleBottomControls;
 
     /* =========================================================
-       AKSI NAVIGASI: PETA TERBUKA SEMPURNA DULU BARU TAMPIL
+       AKSI NAVIGASI
        ========================================================= */
     function resetToHomeCommand() {
       closeInspector();
       filterCategory('All');
       setActivePill('btn-home');
+
+      // Hapus toast notifikasi atas agar tidak menumpuk dengan kartu pop-up gereja
+      hideToastNow();
 
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
@@ -1199,13 +1210,13 @@
         if (gmsChurchMarker) gmsChurchMarker.openPopup();
       }, 1650);
 
-      triggerScopeToastAfterFly('GMS GANDARIA CITY', 1600);
       toggleBottomControls(false);
     }
 
     function flyToJaksel() {
       closeInspector();
       map.closePopup();
+      hideToastNow();
 
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
@@ -1218,7 +1229,6 @@
       updateScopeHeader(VIEWS.jaksel.badgeText, VIEWS.jaksel.scopeText);
       map.flyTo(VIEWS.jaksel.center, VIEWS.jaksel.zoom, { duration: VIEWS.jaksel.duration });
 
-      // Tunggu animasi zoom (2 detik) terbuka sempurna, lalu muncul & stay 7 detik
       triggerScopeToastAfterFly('AREA JAKARTA SELATAN', 2000);
       toggleBottomControls(false);
     }
@@ -1226,6 +1236,7 @@
     function flyToJakarta() {
       closeInspector();
       map.closePopup();
+      hideToastNow();
 
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
@@ -1238,7 +1249,6 @@
       updateScopeHeader(VIEWS.jakarta.badgeText, VIEWS.jakarta.scopeText);
       map.flyTo(VIEWS.jakarta.center, VIEWS.jakarta.zoom, { duration: VIEWS.jakarta.duration });
 
-      // Tunggu animasi zoom (2.2 detik) terbuka sempurna, lalu muncul & stay 7 detik
       triggerScopeToastAfterFly('AREA DKI JAKARTA', 2200);
       toggleBottomControls(false);
     }
@@ -1246,6 +1256,7 @@
     function flyToArchipelago() {
       closeInspector();
       map.closePopup();
+      hideToastNow();
 
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
@@ -1258,7 +1269,6 @@
       updateScopeHeader(VIEWS.indonesia.badgeText, VIEWS.indonesia.scopeText);
       map.flyTo(VIEWS.indonesia.center, VIEWS.indonesia.zoom, { duration: VIEWS.indonesia.duration });
 
-      // Tunggu animasi zoom (3.2 detik) terbuka sempurna, lalu muncul & stay 7 detik
       triggerScopeToastAfterFly('Indonesia', 3200);
       toggleBottomControls(false);
     }
@@ -1454,7 +1464,10 @@
     }
     window.addEventListener('load', ensureIframeFocus);
     document.addEventListener('click', ensureIframeFocus);
-    map.on('click', ensureIframeFocus);
+    map.on('click', () => {
+      ensureIframeFocus();
+      hideToastNow(); // Klik peta bisa langsung menutup toast jika tidak ingin menunggu
+    });
 
     const homeBtn = document.getElementById('btn-home');
     if (homeBtn) homeBtn.onclick = (e) => { if (e) e.stopPropagation(); resetToHomeCommand(); };
