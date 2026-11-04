@@ -381,20 +381,21 @@
       line-height: 1.4 !important;
     }
 
+    /* GLOW NEON BIRU DETAIL MENGIKUTI LEKUKAN ALAMI */
     .neon-jaksel-path {
-      filter: drop-shadow(0 0 7px #0284c7) drop-shadow(0 0 18px rgba(56, 189, 248, 0.9));
+      filter: drop-shadow(0 0 5px #0284c7) drop-shadow(0 0 14px rgba(56, 189, 248, 0.95));
       animation: neon-jaksel-pulse 2.8s ease-in-out infinite alternate;
     }
 
     @keyframes neon-jaksel-pulse {
       0% {
         stroke-opacity: 0.85;
-        filter: drop-shadow(0 0 4px #0284c7) drop-shadow(0 0 12px rgba(56, 189, 248, 0.75));
+        filter: drop-shadow(0 0 4px #0284c7) drop-shadow(0 0 10px rgba(56, 189, 248, 0.75));
       }
 
       100% {
         stroke-opacity: 1;
-        filter: drop-shadow(0 0 10px #38bdf8) drop-shadow(0 0 24px rgba(56, 189, 248, 1));
+        filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 20px rgba(56, 189, 248, 1));
       }
     }
 
@@ -483,7 +484,6 @@
                 class="text-[7.5px] px-1 py-0.1 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">2.5D</span>
               <span class="text-[11px] font-bold text-white tracking-wide leading-tight">CONNECT GROUP</span>
             </div>
-            <!-- Baris Keterangan Scope Peta Aktif -->
             <div class="text-[7.5px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5 leading-none"
               id="scope-status">
               <span class="text-cyan-300 truncate max-w-[220px] font-semibold" id="scope-title">AREA JAKARTA
@@ -873,12 +873,32 @@
       [-6.115, 106.685], [-6.088, 106.695]
     ];
 
+    /* =========================================================
+       KOORDINAT PRESISI BATAS RESMI JAKARTA SELATAN (MENGIKUTI GARIS MERAH BPN/GOOGLE MAPS)
+       ========================================================= */
     const JAKSEL_BORDER_COORDS = [
-      [-6.208, 106.795], [-6.216, 106.822], [-6.223, 106.848], [-6.230, 106.862],
-      [-6.248, 106.865], [-6.275, 106.858], [-6.305, 106.855], [-6.345, 106.848],
-      [-6.368, 106.832], [-6.355, 106.802], [-6.335, 106.782], [-6.310, 106.778],
-      [-6.285, 106.762], [-6.255, 106.755], [-6.235, 106.768], [-6.220, 106.778],
-      [-6.208, 106.795]
+      // 1. Batas Utara (Setiabudi - Tebet berbatasan dengan Menteng / Manggarai)
+      [-6.2045, 106.8185], [-6.2052, 106.8245], [-6.2078, 106.8335], [-6.2120, 106.8402],
+      [-6.2165, 106.8485], [-6.2202, 106.8580], [-6.2245, 106.8635],
+      // 2. Batas Timur (Tebet - Pancoran - Ciliwung - Kramat Jati Jaktim)
+      [-6.2340, 106.8640], [-6.2440, 106.8665], [-6.2520, 106.8625], [-6.2610, 106.8585],
+      [-6.2715, 106.8590], [-6.2820, 106.8540], [-6.2940, 106.8530], [-6.3050, 106.8545],
+      // 3. Batas Tenggara (Pasar Minggu - Jagakarsa berbatasan Ciracas / Cilangkap)
+      [-6.3210, 106.8480], [-6.3360, 106.8465], [-6.3520, 106.8420], [-6.3650, 106.8350],
+      // 4. Batas Paling Selatan (Srengseng Sawah / Jagakarsa berbatasan Kukusan Beji & UI Depok)
+      [-6.3710, 106.8320], [-6.3695, 106.8240], [-6.3615, 106.8180], [-6.3550, 106.8090],
+      [-6.3565, 106.8010], [-6.3470, 106.7920],
+      // 5. Batas Barat Daya (Ciganjur - Cilandak berbatasan Cinere Gandul Depok)
+      [-6.3360, 106.7865], [-6.3220, 106.7830], [-6.3120, 106.7795], [-6.3050, 106.7730],
+      // 6. Batas Barat (Lebak Bulus - Pondok Pinang berbatasan Ciputat & Rempoa Banten)
+      [-6.2950, 106.7700], [-6.2840, 106.7640], [-6.2750, 106.7610], [-6.2650, 106.7570],
+      // 7. Tonjolan Barat Laut Resmi (Kecamatan Pesanggrahan - Bintaro - Petukangan)
+      [-6.2570, 106.7540], [-6.2530, 106.7450], [-6.2550, 106.7370], [-6.2600, 106.7340],
+      [-6.2530, 106.7320], [-6.2420, 106.7350], [-6.2340, 106.7390], [-6.2250, 106.7460],
+      [-6.2210, 106.7580], [-6.2230, 106.7670],
+      // 8. Batas Utara Sisi Barat (Kebayoran Lama - Senayan berbatasan Palmerah / Tanah Abang)
+      [-6.2210, 106.7800], [-6.2160, 106.7920], [-6.2120, 106.8000], [-6.2150, 106.8060],
+      [-6.2110, 106.8110], [-6.2045, 106.8185]
     ];
 
     function setupBoundaries() {
@@ -892,11 +912,13 @@
       jakartaBoundaryLayer = jktGroup;
 
       const jksGroup = L.featureGroup();
+      // Outer glow boundary
       jksGroup.addLayer(L.polygon(JAKSEL_BORDER_COORDS, {
-        color: '#0284c7', weight: 9, opacity: 0.38, fillColor: '#0369a1', fillOpacity: 0.08, dashArray: '7, 6', interactive: false
+        color: '#0284c7', weight: 7, opacity: 0.35, fillColor: '#0369a1', fillOpacity: 0.08, dashArray: '6, 5', interactive: false
       }));
+      // Core bright neon stroke mengikuti lekukan geografis alami
       jksGroup.addLayer(L.polygon(JAKSEL_BORDER_COORDS, {
-        color: '#0284c7', weight: 3.5, opacity: 0.95, fillOpacity: 0, className: 'neon-jaksel-path', interactive: false
+        color: '#38bdf8', weight: 3, opacity: 0.95, fillOpacity: 0, className: 'neon-jaksel-path', interactive: false
       }));
       jakselBoundaryLayer = jksGroup;
     }
@@ -1114,7 +1136,6 @@
       });
     }
 
-    /* SISTEM TOAST KETERANGAN */
     let toastTimer = null;
     let toastPendingTimer = null;
 
@@ -1186,20 +1207,18 @@
     window.toggleBottomControls = toggleBottomControls;
 
     /* =========================================================
-       AKSI NAVIGASI: IKON GEREJA TETAP AKTIF DI HOME, JAKSEL, & JAKARTA
+       AKSI NAVIGASI
        ========================================================= */
     function resetToHomeCommand() {
       closeInspector();
       filterCategory('All');
       setActivePill('btn-home');
 
-      // Hapus toast notifikasi atas agar tidak menumpuk dengan kartu pop-up gereja
       hideToastNow();
 
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
 
-      // Pastikan marker gereja selalu terpasang
       if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
         gmsChurchMarker.addTo(map);
       }
@@ -1207,7 +1226,6 @@
       updateScopeHeader('GMS GANDARIA CITY', 'GMS GANDARIA CITY');
       map.flyTo(GMS_GC_COORDS, 13.5, { animate: true, duration: 1.6 });
 
-      // Tampilkan kartu popup info di mode Home
       setTimeout(() => {
         if (gmsChurchMarker) gmsChurchMarker.openPopup();
       }, 1650);
@@ -1217,10 +1235,9 @@
 
     function flyToJaksel() {
       closeInspector();
-      map.closePopup(); // Tutup popup agar tidak menumpuk
+      map.closePopup();
       hideToastNow();
 
-      // IKON GMS TETAP DI-KEEP DI JAKSEL
       if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
         gmsChurchMarker.addTo(map);
       }
@@ -1238,10 +1255,9 @@
 
     function flyToJakarta() {
       closeInspector();
-      map.closePopup(); // Tutup popup agar tidak menumpuk
+      map.closePopup();
       hideToastNow();
 
-      // IKON GMS TETAP DI-KEEP DI JAKARTA
       if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
         gmsChurchMarker.addTo(map);
       }
@@ -1262,7 +1278,6 @@
       map.closePopup();
       hideToastNow();
 
-      // Hapus marker GMS khusus di skala Nasional agar fokus ke nusantara
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
       }
