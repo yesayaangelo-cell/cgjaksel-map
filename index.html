@@ -238,6 +238,59 @@
       }
     }
 
+    /* IKON KHUSUS GMS GANDARIA CITY */
+    .church-pin-container {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translate(-50%, -50%);
+    }
+
+    .church-pin-glow {
+      position: absolute;
+      inset: 0px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(234, 179, 8, 0.5) 0%, rgba(234, 179, 8, 0) 70%);
+      animation: church-pulse 2s infinite alternate;
+    }
+
+    .church-pin-badge {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid #facc15;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 0 18px rgba(250, 204, 21, 0.85), inset 0 0 6px rgba(255, 255, 255, 0.4);
+      transform: rotate(-5deg);
+      transition: transform 0.2s ease;
+    }
+
+    .church-pin-container:hover .church-pin-badge {
+      transform: scale(1.2) rotate(0deg);
+      border-color: #ffffff;
+      box-shadow: 0 0 25px rgba(250, 204, 21, 1);
+    }
+
+    @keyframes church-pulse {
+      0% {
+        transform: scale(0.85);
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: scale(1.4);
+        opacity: 1;
+      }
+    }
+
     .national-beacon {
       position: relative;
       width: 70px;
@@ -407,8 +460,7 @@
 
       <!-- Main Header Brand Card -->
       <header id="main-header-brand" class="pointer-events-auto">
-        <button id="btn-brand-home" type="button" onclick="resetToHomeCommand()"
-          title="Click to reset to Home Command Center (Key: H)"
+        <button id="btn-brand-home" type="button" onclick="resetToHomeCommand()" title="Click to reset to Home (Key: H)"
           class="glass-panel w-72 px-3 py-1.5 rounded-lg flex items-center justify-between force-clickable border-r-2 border-r-cyan-400 border-l-0 text-right hover:border-r-cyan-300 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all group">
           <div
             class="w-5 h-5 rounded-md bg-cyan-950/80 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.3)] group-hover:scale-105 transition-transform shrink-0">
@@ -470,7 +522,7 @@
         class="glass-panel px-3 py-2 rounded-2xl flex items-center gap-2 shadow-[0_10px_35px_rgba(0,0,0,0.85)] border-cyan-500/30 pointer-events-auto whitespace-nowrap">
         <button id="btn-home" type="button"
           class="glass-pill active px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold tracking-wide text-cyan-200 border-cyan-400/60 force-clickable"
-          title="Reset to Home Command Center View (Key: H)">
+          title="Reset to Home (Key: H)">
           <span class="text-sm">🏠</span>
           <span class="whitespace-nowrap">Home</span>
         </button>
@@ -672,14 +724,12 @@
     });
 
     /* =========================================================
-       BASEMAP LAYERS: BERWARNA (COLOR) VS GELAP (CYBER DARK)
+       BASEMAP LAYERS: BERWARNA VS GELAP
        ========================================================= */
-    // 1. Layer Berwarna Alami & Detail (Esri World Topo / NatGeo Color - 100% Gratis & Stabil)
     const colorBasemapLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 18
     });
 
-    // 2. Layer Cyber Dark (Esri Dark Gray Canvas)
     const darkBaseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 16
     });
@@ -688,7 +738,6 @@
       opacity: 0.75
     });
 
-    // Default aktif: Basemap Berwarna
     let isColorMode = true;
     colorBasemapLayer.addTo(map);
 
@@ -740,13 +789,63 @@
     let activeCategory = 'All';
     let markersList = [];
     let nationalBeaconMarker = null;
+    let gmsChurchMarker = null;
     let jakartaBoundaryLayer = null;
     let jakselBoundaryLayer = null;
     let selectedCG = null;
     let isEditMode = false;
     let bottomControlsVisible = true;
 
-    // Batas Wilayah Neon
+    // Koordinat Resmi GMS Gandaria City
+    const GMS_GC_COORDS = [-6.2442, 106.7836];
+
+    /* =========================================================
+       SETUP MARKER KHUSUS GEREJA (GMS GANDARIA CITY)
+       ========================================================= */
+    function setupGmsChurchMarker() {
+      const churchIcon = L.divIcon({
+        className: 'church-pin-wrapper',
+        html: `
+          <div class="church-pin-container" title="GMS Gandaria City">
+            <div class="church-pin-glow"></div>
+            <div class="church-pin-badge">
+              <span>⛪</span>
+            </div>
+          </div>
+        `,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
+      });
+
+      gmsChurchMarker = L.marker(GMS_GC_COORDS, {
+        icon: churchIcon,
+        zIndexOffset: 10000
+      });
+
+      gmsChurchMarker.bindPopup(`
+        <div class="p-2 text-center font-mono">
+          <div class="text-sm font-black text-white">GMS GANDARIA CITY</div>
+          <div class="text-[11px] text-slate-300 mt-1">Gandaria City Mall Lt. 3, Jakarta Selatan</div>
+          <div class="text-[9.5px] text-cyan-300 mt-1.5 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+            📍 Lat: -6.24420, Lng: 106.78360
+          </div>
+        </div>
+      `, {
+        offset: [0, -15],
+        closeButton: true
+      });
+
+      gmsChurchMarker.bindTooltip(`
+        <div class="font-mono text-xs">
+          <span class="text-amber-400 font-bold">⛪ GMS GANDARIA CITY</span>
+        </div>
+      `, {
+        direction: 'top',
+        offset: [0, -18],
+        opacity: 0.95
+      });
+    }
+
     const JAKARTA_BORDER_COORDS = [
       [-6.088, 106.695], [-6.095, 106.745], [-6.115, 106.775], [-6.112, 106.825],
       [-6.105, 106.885], [-6.098, 106.925], [-6.125, 106.972], [-6.155, 106.975],
@@ -972,6 +1071,10 @@
         markersList.push(marker);
       });
 
+      if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
+        gmsChurchMarker.addTo(map);
+      }
+
       updateMarkerVisibilityByZoom();
     }
 
@@ -1046,6 +1149,9 @@
     }
     window.toggleBottomControls = toggleBottomControls;
 
+    /* =========================================================
+       FUNGSI TOMBOL HOME: FOKUS KE GMS GANDARIA CITY
+       ========================================================= */
     function resetToHomeCommand() {
       closeInspector();
       filterCategory('All');
@@ -1054,9 +1160,16 @@
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
 
-      map.closePopup();
-      map.flyTo(VIEWS.jaksel.center, VIEWS.jaksel.zoom, { animate: true, duration: 1.5 });
-      showToast('🏠 Home Command Center Reset');
+      if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
+        gmsChurchMarker.addTo(map);
+      }
+
+      map.flyTo(GMS_GC_COORDS, 13.5, { animate: true, duration: 1.6 });
+      setTimeout(() => {
+        if (gmsChurchMarker) gmsChurchMarker.openPopup();
+      }, 1650);
+
+      showToast('⛪ GMS Gandaria City');
       toggleBottomControls(false);
     }
 
@@ -1294,6 +1407,7 @@
     document.getElementById('pill-indonesia')?.addEventListener('click', (e) => { e.stopPropagation(); flyToArchipelago(); });
 
     setupNationalBeacon();
+    setupGmsChurchMarker();
     setupBoundaries();
     renderMarkers();
     fetchSheetData();
