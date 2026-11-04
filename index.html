@@ -266,8 +266,8 @@
 
     .national-beacon {
       position: relative;
-      width: 60px;
-      height: 60px;
+      width: 70px;
+      height: 70px;
       pointer-events: none;
       display: flex;
       align-items: center;
@@ -275,12 +275,12 @@
     }
 
     .beacon-dot {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       background: #22d3ee;
-      box-shadow: 0 0 24px #22d3ee, 0 0 45px #06b6d4;
-      border: 2px solid #ffffff;
+      box-shadow: 0 0 30px #22d3ee, 0 0 50px #06b6d4;
+      border: 2.5px solid #ffffff;
     }
 
     .beacon-wave-1,
@@ -308,7 +308,7 @@
       }
 
       100% {
-        transform: scale(3.2);
+        transform: scale(3.5);
         opacity: 0;
       }
     }
@@ -360,11 +360,6 @@
       margin: 10px 14px !important;
       line-height: 1.4 !important;
     }
-
-    .poly-hover {
-      filter: brightness(1.25) drop-shadow(0 0 12px rgba(56, 189, 248, 0.5));
-      transition: all 0.2s ease-in-out;
-    }
   </style>
 </head>
 
@@ -388,7 +383,7 @@
 
     <div class="scanline absolute inset-0 z-10 pointer-events-none"></div>
 
-    <!-- LEGENDA TEMATIK ADMINISTRASI (POJOK KIRI BAWAH) -->
+    <!-- LEGENDA RESMI (POJOK KIRI BAWAH) -->
     <div id="legend-panel"
       class="absolute bottom-12 left-4 z-20 glass-panel p-3 rounded-xl border-cyan-500/25 max-w-[210px] pointer-events-auto transition-all duration-300 hidden md:block">
       <div
@@ -396,9 +391,7 @@
         <span id="legend-title">KECAMATAN JAKSEL</span>
         <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
       </div>
-      <div id="legend-items" class="space-y-1 text-[9.5px] font-mono text-slate-300">
-        <!-- Disuntikkan via JS sesuai level zoom -->
-      </div>
+      <div id="legend-items" class="space-y-1 text-[9.5px] font-mono text-slate-300"></div>
     </div>
 
     <!-- TOP-RIGHT STACK -->
@@ -678,16 +671,11 @@
       attributionControl: false
     });
 
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 16
+    // Basemap Dark Canvas Carto
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 18,
+      subdomains: 'abcd'
     }).addTo(map);
-
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 16,
-      opacity: 0.75
-    }).addTo(map);
-
-    const DEFAULT_DATA = [];
 
     let currentData = (() => {
       try {
@@ -697,7 +685,7 @@
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
       } catch (err) { }
-      return DEFAULT_DATA;
+      return [];
     })();
 
     const COLOR_MAP = {
@@ -719,209 +707,130 @@
     let isEditMode = false;
     let bottomControlsVisible = true;
 
-    /* =========================================================
-       PALET WARNA SESUAI GAMBAR REFERENSI
-       ========================================================= */
-    // 1. 10 Kecamatan Jaksel (Peta Administrasi Jaksel)
-    const JAKSEL_KECAMATAN_PALETTE = {
-      "Cilandak": { color: "#38bdf8", name: "Cilandak" },
-      "Jagakarsa": { color: "#c084fc", name: "Jagakarsa" },
-      "Kebayoran Baru": { color: "#fb923c", name: "Kebayoran Baru" },
-      "Kebayoran Lama": { color: "#f472b6", name: "Kebayoran Lama" },
-      "Mampang Prapatan": { color: "#facc15", name: "Mampang Prapatan" },
-      "Pancoran": { color: "#fb923c", name: "Pancoran" },
-      "Pasar Minggu": { color: "#a3e635", name: "Pasar Minggu" },
-      "Pesanggrahan": { color: "#84cc16", name: "Pesanggrahan" },
-      "Setiabudi": { color: "#4ade80", name: "Setiabudi" },
-      "Tebet": { color: "#2dd4bf", name: "Tebet" }
+    // PALET WARNA SESUAI GAMBAR REFERENSI
+    const KECAMATAN_COLORS = {
+      "Cilandak": "#06b6d4",
+      "Jagakarsa": "#c084fc",
+      "Kebayoran Baru": "#fb923c",
+      "Kebayoran Lama": "#f472b6",
+      "Mampang Prapatan": "#facc15",
+      "Pancoran": "#f97316",
+      "Pasar Minggu": "#a3e635",
+      "Pesanggrahan": "#65a30d",
+      "Setiabudi": "#4ade80",
+      "Tebet": "#2dd4bf"
     };
 
-    // 2. 5 Kota Administrasi DKI Jakarta (Districts of Jakarta)
-    const JAKARTA_DISTRICTS_PALETTE = {
-      "South Jakarta": { color: "#93c5fd", name: "Jakarta Selatan" },
-      "Central Jakarta": { color: "#d8b4fe", name: "Jakarta Pusat" },
-      "West Jakarta": { color: "#fed7aa", name: "Jakarta Barat" },
-      "East Jakarta": { color: "#fca5a5", name: "Jakarta Timur" },
-      "North Jakarta": { color: "#bbf7d0", name: "Jakarta Utara" }
+    const KOTA_COLORS = {
+      "Jakarta Selatan": "#93c5fd",
+      "Jakarta Pusat": "#d8b4fe",
+      "Jakarta Barat": "#fed7aa",
+      "Jakarta Timur": "#fca5a5",
+      "Jakarta Utara": "#bbf7d0",
+      "Kepulauan Seribu": "#67e8f9"
     };
 
-    // 3. Pulau-pulau Besar Indonesia (Peta Indo Paintmaps)
-    const INDONESIA_ISLANDS_PALETTE = {
-      "Sumatera": { color: "#fbbf24" },
-      "Jawa": { color: "#fdba74" },
-      "Kalimantan": { color: "#f472b6" },
-      "Sulawesi": { color: "#ec4899" },
-      "Papua": { color: "#e879f9" },
-      "Nusa Tenggara": { color: "#fef08a" },
-      "Maluku": { color: "#fb923c" }
-    };
+    let dkiKecamatanLayer = null;
+    let dkiKotaLayer = null;
+    let indonesiaGeoLayer = null;
 
-    /* =========================================================
-       GEOJSON POLIGON (KOORDINAT BATAS ASLI WILAYAH)
-       ========================================================= */
-    const JAKSEL_POLYGONS = {
-      "Setiabudi": [
-        [-6.205, 106.820], [-6.205, 106.838], [-6.218, 106.840], [-6.230, 106.833],
-        [-6.232, 106.820], [-6.220, 106.818], [-6.205, 106.820]
-      ],
-      "Tebet": [
-        [-6.218, 106.840], [-6.220, 106.862], [-6.248, 106.865], [-6.250, 106.848],
-        [-6.230, 106.833], [-6.218, 106.840]
-      ],
-      "Kebayoran Baru": [
-        [-6.220, 106.788], [-6.220, 106.818], [-6.232, 106.820], [-6.255, 106.815],
-        [-6.262, 106.795], [-6.235, 106.785], [-6.220, 106.788]
-      ],
-      "Kebayoran Lama": [
-        [-6.220, 106.768], [-6.235, 106.785], [-6.262, 106.795], [-6.280, 106.780],
-        [-6.285, 106.765], [-6.255, 106.758], [-6.220, 106.768]
-      ],
-      "Pesanggrahan": [
-        [-6.235, 106.755], [-6.255, 106.758], [-6.285, 106.762], [-6.275, 106.735],
-        [-6.245, 106.735], [-6.235, 106.755]
-      ],
-      "Mampang Prapatan": [
-        [-6.232, 106.820], [-6.230, 106.833], [-6.265, 106.835], [-6.275, 106.825],
-        [-6.255, 106.815], [-6.232, 106.820]
-      ],
-      "Pancoran": [
-        [-6.248, 106.865], [-6.270, 106.860], [-6.275, 106.842], [-6.265, 106.835],
-        [-6.250, 106.848], [-6.248, 106.865]
-      ],
-      "Cilandak": [
-        [-6.262, 106.795], [-6.280, 106.780], [-6.310, 106.780], [-6.335, 106.790],
-        [-6.315, 106.815], [-6.280, 106.810], [-6.262, 106.795]
-      ],
-      "Pasar Minggu": [
-        [-6.275, 106.842], [-6.270, 106.860], [-6.305, 106.855], [-6.325, 106.840],
-        [-6.315, 106.815], [-6.280, 106.810], [-6.265, 106.835], [-6.275, 106.842]
-      ],
-      "Jagakarsa": [
-        [-6.315, 106.815], [-6.335, 106.790], [-6.355, 106.802], [-6.368, 106.832],
-        [-6.345, 106.848], [-6.305, 106.855], [-6.325, 106.840], [-6.315, 106.815]
-      ]
-    };
+    // 1. Memuat Poligon Asli Kecamatan & Kota DKI Jakarta dari Repository Resmi
+    async function loadOfficialBoundaries() {
+      try {
+        // Data resmi batas kecamatan DKI Jakarta
+        const resKec = await fetch('https://raw.githubusercontent.com/superpikar/indonesia-geojson/master/indonesia-kecamatan-dki-jaksel.geojson');
+        if (resKec.ok) {
+          const kecGeo = await resKec.json();
+          dkiKecamatanLayer = L.geoJSON(kecGeo, {
+            style: (feature) => {
+              const name = feature.properties.WADMKC || feature.properties.KECAMATAN || "";
+              const color = KECAMATAN_COLORS[name] || "#38bdf8";
+              return {
+                fillColor: color,
+                fillOpacity: 0.45,
+                color: color,
+                weight: 1.8,
+                opacity: 0.9,
+                dashArray: '3, 3'
+              };
+            },
+            onEachFeature: (feature, layer) => {
+              const name = feature.properties.WADMKC || feature.properties.KECAMATAN || "Kecamatan";
+              layer.bindTooltip(`<div class="font-mono text-xs font-bold text-white uppercase">${name}</div>`, {
+                sticky: true,
+                direction: 'top'
+              });
+              layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.75, weight: 3 }));
+              layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.45, weight: 1.8 }));
+            }
+          }).addTo(map);
+        }
+      } catch (e) {
+        console.warn("Kecamatan GeoJSON fallback load error:", e);
+      }
 
-    const JAKARTA_DISTRICT_POLYGONS = {
-      "Central Jakarta": [
-        [-6.160, 106.810], [-6.155, 106.865], [-6.205, 106.860], [-6.218, 106.840],
-        [-6.205, 106.810], [-6.160, 106.810]
-      ],
-      "North Jakarta": [
-        [-6.088, 106.695], [-6.095, 106.775], [-6.105, 106.885], [-6.125, 106.972],
-        [-6.155, 106.960], [-6.155, 106.865], [-6.160, 106.810], [-6.130, 106.760],
-        [-6.088, 106.695]
-      ],
-      "West Jakarta": [
-        [-6.130, 106.760], [-6.160, 106.810], [-6.205, 106.810], [-6.220, 106.768],
-        [-6.235, 106.735], [-6.158, 106.695], [-6.115, 106.685], [-6.130, 106.760]
-      ],
-      "East Jakarta": [
-        [-6.155, 106.865], [-6.155, 106.960], [-6.262, 106.945], [-6.358, 106.905],
-        [-6.368, 106.850], [-6.270, 106.860], [-6.248, 106.865], [-6.205, 106.860],
-        [-6.155, 106.865]
-      ],
-      "South Jakarta": [
-        [-6.205, 106.810], [-6.218, 106.840], [-6.248, 106.865], [-6.270, 106.860],
-        [-6.368, 106.850], [-6.368, 106.832], [-6.355, 106.802], [-6.335, 106.782],
-        [-6.285, 106.762], [-6.235, 106.735], [-6.220, 106.768], [-6.205, 106.810]
-      ]
-    };
+      try {
+        // Data resmi batas Kota DKI Jakarta (Jaksel, Jakpus, Jakbar, Jaktim, Jakut)
+        const resKota = await fetch('https://raw.githubusercontent.com/anshar/dki-jakarta-geojson/master/dki-jakarta.geojson');
+        if (resKota.ok) {
+          const kotaGeo = await resKota.json();
+          dkiKotaLayer = L.geoJSON(kotaGeo, {
+            style: (feature) => {
+              const name = feature.properties.nama_kabupaten || feature.properties.NAMA_KABUPATEN || feature.properties.name || "";
+              let color = "#93c5fd";
+              if (name.includes("Pusat")) color = KOTA_COLORS["Jakarta Pusat"];
+              else if (name.includes("Barat")) color = KOTA_COLORS["Jakarta Barat"];
+              else if (name.includes("Timur")) color = KOTA_COLORS["Jakarta Timur"];
+              else if (name.includes("Utara")) color = KOTA_COLORS["Jakarta Utara"];
+              else if (name.includes("Selatan")) color = KOTA_COLORS["Jakarta Selatan"];
 
-    const INDONESIA_ISLAND_POLYGONS = {
-      "Sumatera": [
-        [5.8, 95.2], [4.5, 98.2], [1.5, 101.5], [-2.5, 105.0], [-5.8, 105.8],
-        [-4.5, 103.0], [-1.0, 100.0], [2.0, 97.5], [5.8, 95.2]
-      ],
-      "Jawa": [
-        [-5.9, 105.9], [-6.0, 108.5], [-6.8, 112.5], [-7.7, 114.5],
-        [-8.7, 114.3], [-8.2, 110.5], [-7.5, 106.5], [-6.8, 105.2], [-5.9, 105.9]
-      ],
-      "Kalimantan": [
-        [4.2, 117.8], [1.0, 118.8], [-1.2, 117.0], [-3.8, 116.0], [-3.5, 112.0],
-        [-2.0, 110.0], [1.0, 109.0], [4.0, 115.5], [4.2, 117.8]
-      ],
-      "Sulawesi": [
-        [1.5, 124.8], [0.8, 120.5], [-2.0, 119.5], [-5.5, 119.5], [-5.5, 120.5],
-        [-3.0, 121.5], [-4.0, 122.8], [-1.0, 123.5], [0.5, 122.5], [1.5, 124.8]
-      ],
-      "Papua": [
-        [-0.5, 131.0], [-2.0, 134.0], [-2.5, 140.8], [-9.0, 141.0],
-        [-8.0, 138.0], [-4.5, 135.5], [-4.0, 131.5], [-0.5, 131.0]
-      ]
-    };
+              return {
+                fillColor: color,
+                fillOpacity: 0.42,
+                color: color,
+                weight: 2,
+                opacity: 0.95
+              };
+            },
+            onEachFeature: (feature, layer) => {
+              const name = feature.properties.nama_kabupaten || "Kota DKI";
+              layer.bindTooltip(`<div class="font-mono text-xs font-bold text-white uppercase">${name}</div>`, {
+                sticky: true,
+                direction: 'top'
+              });
+              layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.7, weight: 3 }));
+              layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.42, weight: 2 }));
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("Kota GeoJSON load error:", e);
+      }
 
-    let jakselPolygonsGroup = L.featureGroup();
-    let jakartaDistrictsGroup = L.featureGroup();
-    let indonesiaIslandsGroup = L.featureGroup();
+      try {
+        // Batas Kepulauan Nusantara Indonesia
+        const resIndo = await fetch('https://raw.githubusercontent.com/superpikar/indonesia-geojson/master/indonesia.geojson');
+        if (resIndo.ok) {
+          const indoGeo = await resIndo.json();
+          const islandPalette = ["#fbbf24", "#f472b6", "#ec4899", "#a855f7", "#38bdf8", "#34d399", "#fb923c"];
+          indonesiaGeoLayer = L.geoJSON(indoGeo, {
+            style: (feature) => {
+              const idx = Math.abs((feature.properties.state || "").length) % islandPalette.length;
+              const color = islandPalette[idx];
+              return {
+                fillColor: color,
+                fillOpacity: 0.38,
+                color: color,
+                weight: 1.2,
+                opacity: 0.8
+              };
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("Indonesia GeoJSON load error:", e);
+      }
 
-    function setupThemeLayers() {
-      // 1. Setup Jaksel Kecamatan Layers
-      Object.keys(JAKSEL_POLYGONS).forEach(name => {
-        const item = JAKSEL_KECAMATAN_PALETTE[name] || { color: '#38bdf8' };
-        const poly = L.polygon(JAKSEL_POLYGONS[name], {
-          fillColor: item.color,
-          fillOpacity: 0.38,
-          color: item.color,
-          weight: 2,
-          opacity: 0.85,
-          dashArray: '4, 4'
-        });
-
-        poly.bindTooltip(`<div class="font-mono text-xs font-bold text-white uppercase">${name}</div>`, {
-          sticky: true,
-          direction: 'top',
-          className: 'glass-panel text-cyan-300'
-        });
-
-        poly.on('mouseover', () => poly.setStyle({ fillOpacity: 0.65, weight: 3 }));
-        poly.on('mouseout', () => poly.setStyle({ fillOpacity: 0.38, weight: 2 }));
-        jakselPolygonsGroup.addLayer(poly);
-      });
-
-      // 2. Setup Jakarta Districts Layers
-      Object.keys(JAKARTA_DISTRICT_POLYGONS).forEach(name => {
-        const item = JAKARTA_DISTRICTS_PALETTE[name] || { color: '#38bdf8' };
-        const poly = L.polygon(JAKARTA_DISTRICT_POLYGONS[name], {
-          fillColor: item.color,
-          fillOpacity: 0.35,
-          color: item.color,
-          weight: 2,
-          opacity: 0.85
-        });
-
-        poly.bindTooltip(`<div class="font-mono text-xs font-bold text-white uppercase">${item.name || name}</div>`, {
-          sticky: true,
-          direction: 'top'
-        });
-
-        poly.on('mouseover', () => poly.setStyle({ fillOpacity: 0.6, weight: 3 }));
-        poly.on('mouseout', () => poly.setStyle({ fillOpacity: 0.35, weight: 2 }));
-        jakartaDistrictsGroup.addLayer(poly);
-      });
-
-      // 3. Setup Indonesia Islands Layers
-      Object.keys(INDONESIA_ISLAND_POLYGONS).forEach(name => {
-        const item = INDONESIA_ISLANDS_PALETTE[name] || { color: '#fbbf24' };
-        const poly = L.polygon(INDONESIA_ISLAND_POLYGONS[name], {
-          fillColor: item.color,
-          fillOpacity: 0.40,
-          color: item.color,
-          weight: 1.5,
-          opacity: 0.8
-        });
-
-        poly.bindTooltip(`<div class="font-mono text-xs font-bold text-white uppercase">${name}</div>`, {
-          sticky: true,
-          direction: 'top'
-        });
-
-        poly.on('mouseover', () => poly.setStyle({ fillOpacity: 0.65, weight: 2.5 }));
-        poly.on('mouseout', () => poly.setStyle({ fillOpacity: 0.40, weight: 1.5 }));
-        indonesiaIslandsGroup.addLayer(poly);
-      });
-
-      jakselPolygonsGroup.addTo(map);
       updateLegend('jaksel');
     }
 
@@ -934,37 +843,33 @@
 
       if (mode === 'jaksel') {
         title.textContent = 'KECAMATAN JAKSEL';
-        Object.keys(JAKSEL_KECAMATAN_PALETTE).forEach(k => {
-          const item = JAKSEL_KECAMATAN_PALETTE[k];
+        Object.keys(KECAMATAN_COLORS).forEach(k => {
           itemsContainer.innerHTML += `
             <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-sm shrink-0" style="background-color: ${item.color};"></span>
-              <span class="truncate">${item.name}</span>
+              <span class="w-2.5 h-2.5 rounded-sm shrink-0" style="background-color: ${KECAMATAN_COLORS[k]};"></span>
+              <span class="truncate">${k}</span>
             </div>
           `;
         });
       } else if (mode === 'jakarta') {
         title.textContent = 'WILAYAH DKI JAKARTA';
-        Object.keys(JAKARTA_DISTRICTS_PALETTE).forEach(k => {
-          const item = JAKARTA_DISTRICTS_PALETTE[k];
+        Object.keys(KOTA_COLORS).forEach(k => {
           itemsContainer.innerHTML += `
             <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-sm shrink-0" style="background-color: ${item.color};"></span>
-              <span class="truncate">${item.name}</span>
-            </div>
-          `;
-        });
-      } else if (mode === 'indonesia') {
-        title.textContent = 'PULAU INDONESIA';
-        Object.keys(INDONESIA_ISLANDS_PALETTE).forEach(k => {
-          const item = INDONESIA_ISLANDS_PALETTE[k];
-          itemsContainer.innerHTML += `
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-sm shrink-0" style="background-color: ${item.color};"></span>
+              <span class="w-2.5 h-2.5 rounded-sm shrink-0" style="background-color: ${KOTA_COLORS[k]};"></span>
               <span class="truncate">${k}</span>
             </div>
           `;
         });
+      } else if (mode === 'indonesia') {
+        title.textContent = 'SKALA NASIONAL';
+        itemsContainer.innerHTML = `
+          <div class="flex items-center gap-2 text-cyan-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+            <span>Epicenter: Jakarta Selatan</span>
+          </div>
+          <div class="text-[8.5px] text-slate-400 mt-1">Jangkauan Nasional Republik Indonesia</div>
+        `;
       }
     }
 
@@ -1091,11 +996,11 @@
             <div class="beacon-dot"></div>
           </div>
         `,
-        iconSize: [60, 60],
-        iconAnchor: [30, 30]
+        iconSize: [70, 70],
+        iconAnchor: [35, 35]
       });
 
-      nationalBeaconMarker = L.marker([-6.22, 106.82], {
+      nationalBeaconMarker = L.marker([-6.285, 106.815], {
         icon: beaconIcon,
         interactive: false
       });
@@ -1235,9 +1140,9 @@
       filterCategory('All');
       setActivePill('btn-home');
 
-      if (map.hasLayer(jakartaDistrictsGroup)) map.removeLayer(jakartaDistrictsGroup);
-      if (map.hasLayer(indonesiaIslandsGroup)) map.removeLayer(indonesiaIslandsGroup);
-      if (!map.hasLayer(jakselPolygonsGroup)) map.addLayer(jakselPolygonsGroup);
+      if (dkiKotaLayer && map.hasLayer(dkiKotaLayer)) map.removeLayer(dkiKotaLayer);
+      if (indonesiaGeoLayer && map.hasLayer(indonesiaGeoLayer)) map.removeLayer(indonesiaGeoLayer);
+      if (dkiKecamatanLayer && !map.hasLayer(dkiKecamatanLayer)) map.addLayer(dkiKecamatanLayer);
       updateLegend('jaksel');
 
       map.closePopup();
@@ -1248,9 +1153,9 @@
 
     function flyToJaksel() {
       closeInspector();
-      if (map.hasLayer(jakartaDistrictsGroup)) map.removeLayer(jakartaDistrictsGroup);
-      if (map.hasLayer(indonesiaIslandsGroup)) map.removeLayer(indonesiaIslandsGroup);
-      if (!map.hasLayer(jakselPolygonsGroup)) map.addLayer(jakselPolygonsGroup);
+      if (dkiKotaLayer && map.hasLayer(dkiKotaLayer)) map.removeLayer(dkiKotaLayer);
+      if (indonesiaGeoLayer && map.hasLayer(indonesiaGeoLayer)) map.removeLayer(indonesiaGeoLayer);
+      if (dkiKecamatanLayer && !map.hasLayer(dkiKecamatanLayer)) map.addLayer(dkiKecamatanLayer);
       updateLegend('jaksel');
 
       setActivePill('pill-jaksel');
@@ -1260,9 +1165,9 @@
 
     function flyToJakarta() {
       closeInspector();
-      if (map.hasLayer(jakselPolygonsGroup)) map.removeLayer(jakselPolygonsGroup);
-      if (map.hasLayer(indonesiaIslandsGroup)) map.removeLayer(indonesiaIslandsGroup);
-      if (!map.hasLayer(jakartaDistrictsGroup)) map.addLayer(jakartaDistrictsGroup);
+      if (dkiKecamatanLayer && map.hasLayer(dkiKecamatanLayer)) map.removeLayer(dkiKecamatanLayer);
+      if (indonesiaGeoLayer && map.hasLayer(indonesiaGeoLayer)) map.removeLayer(indonesiaGeoLayer);
+      if (dkiKotaLayer && !map.hasLayer(dkiKotaLayer)) map.addLayer(dkiKotaLayer);
       updateLegend('jakarta');
 
       setActivePill('pill-jakarta');
@@ -1272,9 +1177,9 @@
 
     function flyToArchipelago() {
       closeInspector();
-      if (map.hasLayer(jakselPolygonsGroup)) map.removeLayer(jakselPolygonsGroup);
-      if (map.hasLayer(jakartaDistrictsGroup)) map.removeLayer(jakartaDistrictsGroup);
-      if (!map.hasLayer(indonesiaIslandsGroup)) map.addLayer(indonesiaIslandsGroup);
+      if (dkiKecamatanLayer && map.hasLayer(dkiKecamatanLayer)) map.removeLayer(dkiKecamatanLayer);
+      if (dkiKotaLayer && map.hasLayer(dkiKotaLayer)) map.removeLayer(dkiKotaLayer);
+      if (indonesiaGeoLayer && !map.hasLayer(indonesiaGeoLayer)) map.addLayer(indonesiaGeoLayer);
       updateLegend('indonesia');
 
       setActivePill('pill-indonesia');
@@ -1486,9 +1391,8 @@
     document.getElementById('pill-indonesia')?.addEventListener('click', (e) => { e.stopPropagation(); flyToArchipelago(); });
 
     setupNationalBeacon();
-    setupThemeLayers();
+    loadOfficialBoundaries();
     renderMarkers();
-
     fetchSheetData();
 
     function updateClock() {
