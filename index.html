@@ -428,9 +428,9 @@
     <div id="map"></div>
     <div class="cyber-grid absolute inset-0 z-[6] pointer-events-none opacity-40"></div>
 
-    <!-- TOAST KETERANGAN PETA YANG DIKLIK -->
+    <!-- TOAST KETERANGAN AREA YANG STAY LEBIH LAMA SETELAH PETA TERBUKA -->
     <div id="toast-notify"
-      class="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] opacity-0 pointer-events-none transition-all duration-300 transform -translate-y-2 glass-panel px-5 py-2.5 rounded-xl text-xs font-mono text-cyan-300 border-cyan-400/50 flex items-center gap-2.5 shadow-[0_0_35px_rgba(34,211,238,0.6)]">
+      class="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] opacity-0 pointer-events-none transition-all duration-500 transform -translate-y-2 glass-panel px-6 py-2.5 rounded-xl text-xs font-mono text-cyan-300 border-cyan-400/50 flex items-center gap-2.5 shadow-[0_0_40px_rgba(34,211,238,0.7)]">
       <span class="text-base animate-pulse">📍</span>
       <span id="toast-text" class="tracking-wide font-bold">AREA JAKARTA SELATAN</span>
     </div>
@@ -483,6 +483,7 @@
                 class="text-[7.5px] px-1 py-0.1 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">2.5D</span>
               <span class="text-[11px] font-bold text-white tracking-wide leading-tight">CONNECT GROUP</span>
             </div>
+            <!-- Baris Keterangan Scope Peta Aktif -->
             <div class="text-[7.5px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5 leading-none"
               id="scope-status">
               <span class="text-cyan-300 truncate max-w-[220px] font-semibold" id="scope-title">AREA JAKARTA
@@ -752,14 +753,14 @@
         colorBasemapLayer.addTo(map);
         if (themeText) themeText.textContent = 'Color Atlas';
         if (themeIcon) themeIcon.textContent = '🌈';
-        showToast('Color Atlas');
+        showToast('Color Atlas', 2500);
       } else {
         if (map.hasLayer(colorBasemapLayer)) map.removeLayer(colorBasemapLayer);
         darkBaseLayer.addTo(map);
         darkRefLayer.addTo(map);
         if (themeText) themeText.textContent = 'Cyber Dark';
         if (themeIcon) themeIcon.textContent = '🕶️';
-        showToast('Cyber Dark');
+        showToast('Cyber Dark', 2500);
       }
     }
 
@@ -947,7 +948,7 @@
     }
 
     async function fetchSheetData(manualTrigger = false) {
-      if (manualTrigger) showToast('Menghubungkan ke Google Sheets...');
+      if (manualTrigger) showToast('Menghubungkan ke Google Sheets...', 2500);
       try {
         const res = await fetch(SCRIPT_URL);
         if (!res.ok) throw new Error('HTTP Status ' + res.status);
@@ -978,11 +979,11 @@
           });
 
           persistData();
-          showToast(manualTrigger ? 'Data Sheets Berhasil Diperbarui!' : 'Sinkron dengan Google Sheets');
+          showToast(manualTrigger ? 'Data Sheets Berhasil Diperbarui!' : 'Sinkron dengan Google Sheets', 2500);
         }
       } catch (err) {
         console.warn('Google Sheets offline/loading cached dataset:', err);
-        if (manualTrigger) showToast('Gagal terhubung ke Sheets');
+        if (manualTrigger) showToast('Gagal terhubung ke Sheets', 2500);
       }
     }
 
@@ -1005,10 +1006,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        showToast('Berhasil Sync ke Google Sheets!');
+        showToast('Berhasil Sync ke Google Sheets!', 2500);
       } catch (err) {
         console.error('Failed to post to Google Sheets:', err);
-        showToast('Gagal simpan ke Sheets (Tersimpan Lokal)');
+        showToast('Gagal simpan ke Sheets (Tersimpan Lokal)', 2500);
       }
     }
 
@@ -1113,19 +1114,33 @@
       });
     }
 
+    /* SISTEM TOAST KETERANGAN: DIBUAT STAY LEBIH LAMA (DEFAULT 7000ms = 7 DETIK) */
     let toastTimer = null;
-    function showToast(message) {
+    let toastPendingTimer = null;
+
+    function showToast(message, stayDuration = 7000) {
       const toast = document.getElementById('toast-notify');
       const text = document.getElementById('toast-text');
       if (!toast || !text) return;
+
       text.textContent = message;
       toast.classList.remove('opacity-0', '-translate-y-2');
       toast.classList.add('opacity-100', 'translate-y-0');
+
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => {
         toast.classList.remove('opacity-100', 'translate-y-0');
         toast.classList.add('opacity-0', '-translate-y-2');
-      }, 2400);
+      }, stayDuration);
+    }
+
+    // Fungsi trigger keterangan yang menunggu animasi selesai (peta terbuka sempurna)
+    function triggerScopeToastAfterFly(message, flyDurationMs) {
+      clearTimeout(toastPendingTimer);
+      // Munculkan tepat saat animasi flyTo selesai, lalu stay 7 detik
+      toastPendingTimer = setTimeout(() => {
+        showToast(message, 7000);
+      }, flyDurationMs);
     }
 
     function updateScopeHeader(badge, scope) {
@@ -1150,7 +1165,7 @@
         }
         if (btnIcon) btnIcon.textContent = '▼';
         if (btnText) btnText.textContent = 'HIDE [C]';
-        showToast('Menu Kontrol Ditampilkan [C]');
+        showToast('Menu Kontrol Ditampilkan [C]', 2500);
       } else {
         if (controller) {
           controller.classList.add('opacity-0', 'translate-y-16', 'pointer-events-none');
@@ -1163,7 +1178,7 @@
     window.toggleBottomControls = toggleBottomControls;
 
     /* =========================================================
-       AKSI NAVIGASI: PEMBERSIHAN OTOMATIS GMS GANDARIA CITY
+       AKSI NAVIGASI: PETA TERBUKA SEMPURNA DULU BARU TAMPIL
        ========================================================= */
     function resetToHomeCommand() {
       closeInspector();
@@ -1173,26 +1188,25 @@
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
 
-      // Munculkan kembali marker gereja khusus di mode Home
       if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
         gmsChurchMarker.addTo(map);
       }
 
       updateScopeHeader('GMS GANDARIA CITY', 'GMS GANDARIA CITY');
       map.flyTo(GMS_GC_COORDS, 13.5, { animate: true, duration: 1.6 });
+
       setTimeout(() => {
         if (gmsChurchMarker) gmsChurchMarker.openPopup();
       }, 1650);
 
-      showToast('GMS GANDARIA CITY');
+      triggerScopeToastAfterFly('GMS GANDARIA CITY', 1600);
       toggleBottomControls(false);
     }
 
     function flyToJaksel() {
       closeInspector();
-      map.closePopup(); // Tutup popup popover yang sedang terbuka
+      map.closePopup();
 
-      // Hapus marker GMS Gandaria City agar tidak menumpuk
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
       }
@@ -1204,15 +1218,15 @@
       updateScopeHeader(VIEWS.jaksel.badgeText, VIEWS.jaksel.scopeText);
       map.flyTo(VIEWS.jaksel.center, VIEWS.jaksel.zoom, { duration: VIEWS.jaksel.duration });
 
-      showToast('AREA JAKARTA SELATAN');
+      // Tunggu animasi zoom (2 detik) terbuka sempurna, lalu muncul & stay 7 detik
+      triggerScopeToastAfterFly('AREA JAKARTA SELATAN', 2000);
       toggleBottomControls(false);
     }
 
     function flyToJakarta() {
       closeInspector();
-      map.closePopup(); // Tutup popup popover yang sedang terbuka
+      map.closePopup();
 
-      // Hapus marker GMS Gandaria City agar tidak menumpuk
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
       }
@@ -1224,15 +1238,15 @@
       updateScopeHeader(VIEWS.jakarta.badgeText, VIEWS.jakarta.scopeText);
       map.flyTo(VIEWS.jakarta.center, VIEWS.jakarta.zoom, { duration: VIEWS.jakarta.duration });
 
-      showToast('AREA DKI JAKARTA');
+      // Tunggu animasi zoom (2.2 detik) terbuka sempurna, lalu muncul & stay 7 detik
+      triggerScopeToastAfterFly('AREA DKI JAKARTA', 2200);
       toggleBottomControls(false);
     }
 
     function flyToArchipelago() {
       closeInspector();
-      map.closePopup(); // Tutup popup popover yang sedang terbuka
+      map.closePopup();
 
-      // Hapus marker GMS Gandaria City agar tidak menumpuk
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
       }
@@ -1244,7 +1258,8 @@
       updateScopeHeader(VIEWS.indonesia.badgeText, VIEWS.indonesia.scopeText);
       map.flyTo(VIEWS.indonesia.center, VIEWS.indonesia.zoom, { duration: VIEWS.indonesia.duration });
 
-      showToast('Indonesia');
+      // Tunggu animasi zoom (3.2 detik) terbuka sempurna, lalu muncul & stay 7 detik
+      triggerScopeToastAfterFly('Indonesia', 3200);
       toggleBottomControls(false);
     }
 
@@ -1395,7 +1410,7 @@
       document.body.appendChild(dlAnchor);
       dlAnchor.click();
       dlAnchor.remove();
-      showToast('Dataset Berhasil Diunduh!');
+      showToast('Dataset Berhasil Diunduh!', 2500);
     }
 
     function closeInspector() {
