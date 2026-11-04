@@ -483,7 +483,6 @@
                 class="text-[7.5px] px-1 py-0.1 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">2.5D</span>
               <span class="text-[11px] font-bold text-white tracking-wide leading-tight">CONNECT GROUP</span>
             </div>
-            <!-- Baris Keterangan Scope Peta Aktif -->
             <div class="text-[7.5px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5 leading-none"
               id="scope-status">
               <span class="text-cyan-300 truncate max-w-[220px] font-semibold" id="scope-title">AREA JAKARTA
@@ -781,7 +780,6 @@
       YA: { hex: '#0284c7', border: 'border-cyan-600', bg: 'bg-cyan-950/70', text: 'text-cyan-300' }
     };
 
-    /* KETERANGAN RESMI SESUAI REQUEST */
     const VIEWS = {
       jaksel: {
         center: [-6.285, 106.815],
@@ -1090,10 +1088,6 @@
         markersList.push(marker);
       });
 
-      if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
-        gmsChurchMarker.addTo(map);
-      }
-
       updateMarkerVisibilityByZoom();
     }
 
@@ -1169,7 +1163,7 @@
     window.toggleBottomControls = toggleBottomControls;
 
     /* =========================================================
-       AKSI NAVIGASI BESERTA KETERANGAN PETA AKTIF
+       AKSI NAVIGASI: PEMBERSIHAN OTOMATIS GMS GANDARIA CITY
        ========================================================= */
     function resetToHomeCommand() {
       closeInspector();
@@ -1179,6 +1173,7 @@
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
 
+      // Munculkan kembali marker gereja khusus di mode Home
       if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
         gmsChurchMarker.addTo(map);
       }
@@ -1195,6 +1190,13 @@
 
     function flyToJaksel() {
       closeInspector();
+      map.closePopup(); // Tutup popup popover yang sedang terbuka
+
+      // Hapus marker GMS Gandaria City agar tidak menumpuk
+      if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
+        map.removeLayer(gmsChurchMarker);
+      }
+
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
       if (!map.hasLayer(jakselBoundaryLayer)) map.addLayer(jakselBoundaryLayer);
 
@@ -1208,6 +1210,13 @@
 
     function flyToJakarta() {
       closeInspector();
+      map.closePopup(); // Tutup popup popover yang sedang terbuka
+
+      // Hapus marker GMS Gandaria City agar tidak menumpuk
+      if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
+        map.removeLayer(gmsChurchMarker);
+      }
+
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
       if (!map.hasLayer(jakartaBoundaryLayer)) map.addLayer(jakartaBoundaryLayer);
 
@@ -1221,6 +1230,13 @@
 
     function flyToArchipelago() {
       closeInspector();
+      map.closePopup(); // Tutup popup popover yang sedang terbuka
+
+      // Hapus marker GMS Gandaria City agar tidak menumpuk
+      if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
+        map.removeLayer(gmsChurchMarker);
+      }
+
       if (map.hasLayer(jakselBoundaryLayer)) map.removeLayer(jakselBoundaryLayer);
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
 
