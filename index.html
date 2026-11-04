@@ -238,7 +238,7 @@
       }
     }
 
-    /* IKON GEREJA GMS GANDARIA CITY (TEGAK LURUS & OUTLINE NEON MERAH) */
+    /* IKON GEREJA GMS GANDARIA CITY (TEGAK LURUS & NEON MERAH) */
     .church-pin-container {
       position: relative;
       width: 46px;
@@ -269,7 +269,6 @@
       justify-content: center;
       font-size: 16px;
       transform: none;
-      /* Tegak lurus tanpa kemiringan */
       box-shadow: 0 0 16px rgba(239, 68, 68, 0.9), inset 0 0 8px rgba(239, 68, 68, 0.4);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
@@ -429,10 +428,11 @@
     <div id="map"></div>
     <div class="cyber-grid absolute inset-0 z-[6] pointer-events-none opacity-40"></div>
 
+    <!-- TOAST KETERANGAN PETA YANG DIKLIK -->
     <div id="toast-notify"
-      class="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] opacity-0 pointer-events-none transition-all duration-300 transform -translate-y-2 glass-panel px-4 py-2 rounded-xl text-xs font-mono text-cyan-300 border-cyan-400/50 flex items-center gap-2 shadow-[0_0_30px_rgba(34,211,238,0.5)]">
-      <span class="text-base animate-pulse">⌖</span>
-      <span id="toast-text">Command Center Active</span>
+      class="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] opacity-0 pointer-events-none transition-all duration-300 transform -translate-y-2 glass-panel px-5 py-2.5 rounded-xl text-xs font-mono text-cyan-300 border-cyan-400/50 flex items-center gap-2.5 shadow-[0_0_35px_rgba(34,211,238,0.6)]">
+      <span class="text-base animate-pulse">📍</span>
+      <span id="toast-text" class="tracking-wide font-bold">PETA JAKARTA SELATAN</span>
     </div>
 
     <!-- TOP-RIGHT STACK -->
@@ -461,7 +461,7 @@
       <!-- Main Header Brand Card -->
       <header id="main-header-brand" class="pointer-events-auto">
         <button id="btn-brand-home" type="button" onclick="resetToHomeCommand()" title="Click to reset to Home (Key: H)"
-          class="glass-panel w-72 px-3 py-1.5 rounded-lg flex items-center justify-between force-clickable border-r-2 border-r-cyan-400 border-l-0 text-right hover:border-r-cyan-300 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all group">
+          class="glass-panel w-80 px-3 py-1.5 rounded-lg flex items-center justify-between force-clickable border-r-2 border-r-cyan-400 border-l-0 text-right hover:border-r-cyan-300 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all group">
           <div
             class="w-5 h-5 rounded-md bg-cyan-950/80 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.3)] group-hover:scale-105 transition-transform shrink-0">
             <svg class="w-2.5 h-2.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -475,19 +475,20 @@
             <div class="flex items-center justify-end gap-1.5 leading-none">
               <span class="text-[7px] font-mono text-emerald-400 font-medium">LIVE</span>
               <span class="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span class="text-[7.5px] font-mono tracking-widest text-cyan-400 font-bold uppercase">JAKARTA
-                SELATAN</span>
+              <span id="hud-region-badge"
+                class="text-[7.5px] font-mono tracking-widest text-cyan-400 font-bold uppercase">JAKARTA SELATAN</span>
             </div>
             <div class="flex items-center justify-end gap-1 mt-0.5">
               <span
                 class="text-[7.5px] px-1 py-0.1 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">2.5D</span>
               <span class="text-[11px] font-bold text-white tracking-wide leading-tight">CONNECT GROUP</span>
             </div>
+            <!-- Baris Keterangan Scope Peta Aktif -->
             <div class="text-[7.5px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5 leading-none"
               id="scope-status">
-              <span class="text-cyan-300 truncate max-w-[190px] font-medium" id="scope-title">LOCAL HIGH-DENSITY CLUSTER
-                (JAKSEL)</span>
-              <span class="text-slate-500 text-[7px]">:SCOPE</span>
+              <span class="text-cyan-300 truncate max-w-[220px] font-semibold" id="scope-title">INI PETA JAKARTA
+                SELATAN</span>
+              <span class="text-slate-500 text-[7px]">:STATUS</span>
             </div>
           </div>
         </button>
@@ -780,10 +781,29 @@
       YA: { hex: '#0284c7', border: 'border-cyan-600', bg: 'bg-cyan-950/70', text: 'text-cyan-300' }
     };
 
+    /* KETERANGAN RESMI MASING-MASING TINGKATAN PETA */
     const VIEWS = {
-      jaksel: { center: [-6.285, 106.815], zoom: 11.85, duration: 2.0, scopeText: 'LOCAL HIGH-DENSITY CLUSTER (JAKARTA SELATAN)' },
-      jakarta: { center: [-6.225, 106.845], zoom: 11.0, duration: 2.2, scopeText: 'PROVINCIAL SCOPE (DKI JAKARTA)' },
-      indonesia: { center: [-2.2, 117.8], zoom: 5, duration: 3.2, scopeText: 'NATIONAL ARCHIPELAGO VISION (REPUBLIC OF INDONESIA)' }
+      jaksel: {
+        center: [-6.285, 106.815],
+        zoom: 11.85,
+        duration: 2.0,
+        badgeText: 'JAKARTA SELATAN',
+        scopeText: 'INI PETA JAKARTA SELATAN'
+      },
+      jakarta: {
+        center: [-6.225, 106.845],
+        zoom: 11.0,
+        duration: 2.2,
+        badgeText: 'DKI JAKARTA',
+        scopeText: 'INI PETA PROVINSI DKI JAKARTA'
+      },
+      indonesia: {
+        center: [-2.2, 117.8],
+        zoom: 5,
+        duration: 3.2,
+        badgeText: 'INDONESIA',
+        scopeText: 'INI PETA NASIONAL (REPUBLIK INDONESIA)'
+      }
     };
 
     let activeCategory = 'All';
@@ -796,7 +816,6 @@
     let isEditMode = false;
     let bottomControlsVisible = true;
 
-    // Koordinat Resmi GMS Gandaria City
     const GMS_GC_COORDS = [-6.2442, 106.7836];
 
     /* =========================================================
@@ -1088,13 +1107,6 @@
         if (nationalBeaconMarker && map.hasLayer(nationalBeaconMarker)) map.removeLayer(nationalBeaconMarker);
         markersList.forEach(m => { if (m._icon) m._icon.style.opacity = '1'; });
       }
-
-      const scopeTitle = document.getElementById('scope-title');
-      if (scopeTitle) {
-        if (currentZoom >= 11.5) scopeTitle.textContent = VIEWS.jaksel.scopeText;
-        else if (currentZoom >= 8.5) scopeTitle.textContent = VIEWS.jakarta.scopeText;
-        else scopeTitle.textContent = VIEWS.indonesia.scopeText;
-      }
     }
 
     function setActivePill(pillId) {
@@ -1119,7 +1131,15 @@
       toastTimer = setTimeout(() => {
         toast.classList.remove('opacity-100', 'translate-y-0');
         toast.classList.add('opacity-0', '-translate-y-2');
-      }, 2200);
+      }, 2400);
+    }
+
+    // Fungsi memperbarui status keterangan teks di pojok kanan atas
+    function updateScopeHeader(badge, scope) {
+      const badgeEl = document.getElementById('hud-region-badge');
+      const scopeEl = document.getElementById('scope-title');
+      if (badgeEl) badgeEl.textContent = badge;
+      if (scopeEl) scopeEl.textContent = scope;
     }
 
     function toggleBottomControls(show) {
@@ -1137,7 +1157,7 @@
         }
         if (btnIcon) btnIcon.textContent = '▼';
         if (btnText) btnText.textContent = 'HIDE [C]';
-        showToast('🧭 Navigation Controls Shown [C]');
+        showToast('🧭 Menu Kontrol Ditampilkan [C]');
       } else {
         if (controller) {
           controller.classList.add('opacity-0', 'translate-y-16', 'pointer-events-none');
@@ -1150,7 +1170,7 @@
     window.toggleBottomControls = toggleBottomControls;
 
     /* =========================================================
-       FUNGSI TOMBOL HOME: FOKUS KE GMS GANDARIA CITY
+       AKSI NAVIGASI BESERTA KETERANGAN PETA AKTIF
        ========================================================= */
     function resetToHomeCommand() {
       closeInspector();
@@ -1164,12 +1184,13 @@
         gmsChurchMarker.addTo(map);
       }
 
+      updateScopeHeader('GMS GANDARIA CITY', 'HOME BASE // GMS GANDARIA CITY');
       map.flyTo(GMS_GC_COORDS, 13.5, { animate: true, duration: 1.6 });
       setTimeout(() => {
         if (gmsChurchMarker) gmsChurchMarker.openPopup();
       }, 1650);
 
-      showToast('⛪ GMS Gandaria City');
+      showToast('⛪ Ini Titik Home: GMS Gandaria City');
       toggleBottomControls(false);
     }
 
@@ -1179,7 +1200,11 @@
       if (!map.hasLayer(jakselBoundaryLayer)) map.addLayer(jakselBoundaryLayer);
 
       setActivePill('pill-jaksel');
+      updateScopeHeader(VIEWS.jaksel.badgeText, VIEWS.jaksel.scopeText);
       map.flyTo(VIEWS.jaksel.center, VIEWS.jaksel.zoom, { duration: VIEWS.jaksel.duration });
+
+      // Keterangan khusus saat Jaksel diklik
+      showToast('📍 Ini Peta Jakarta Selatan (Cluster Jaksel)');
       toggleBottomControls(false);
     }
 
@@ -1189,7 +1214,11 @@
       if (!map.hasLayer(jakartaBoundaryLayer)) map.addLayer(jakartaBoundaryLayer);
 
       setActivePill('pill-jakarta');
+      updateScopeHeader(VIEWS.jakarta.badgeText, VIEWS.jakarta.scopeText);
       map.flyTo(VIEWS.jakarta.center, VIEWS.jakarta.zoom, { duration: VIEWS.jakarta.duration });
+
+      // Keterangan khusus saat Jakarta diklik
+      showToast('🏙️ Ini Peta Provinsi DKI Jakarta');
       toggleBottomControls(false);
     }
 
@@ -1199,7 +1228,11 @@
       if (map.hasLayer(jakartaBoundaryLayer)) map.removeLayer(jakartaBoundaryLayer);
 
       setActivePill('pill-indonesia');
+      updateScopeHeader(VIEWS.indonesia.badgeText, VIEWS.indonesia.scopeText);
       map.flyTo(VIEWS.indonesia.center, VIEWS.indonesia.zoom, { duration: VIEWS.indonesia.duration });
+
+      // Keterangan khusus saat Archipelago diklik
+      showToast('🇮🇩 Ini Peta Nasional (Republik Indonesia)');
       toggleBottomControls(false);
     }
 
