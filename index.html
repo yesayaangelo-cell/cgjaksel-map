@@ -381,9 +381,9 @@
       line-height: 1.4 !important;
     }
 
-    /* GLOW NEON BIRU DETAIL MENGIKUTI LEKUKAN ALAMI */
+    /* GLOW NEON BIRU DETAIL MENGIKUTI LEKUKAN GOOGLE MAPS */
     .neon-jaksel-path {
-      filter: drop-shadow(0 0 5px #0284c7) drop-shadow(0 0 14px rgba(56, 189, 248, 0.95));
+      filter: drop-shadow(0 0 6px #0284c7) drop-shadow(0 0 16px rgba(56, 189, 248, 0.95));
       animation: neon-jaksel-pulse 2.8s ease-in-out infinite alternate;
     }
 
@@ -395,7 +395,7 @@
 
       100% {
         stroke-opacity: 1;
-        filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 20px rgba(56, 189, 248, 1));
+        filter: drop-shadow(0 0 9px #38bdf8) drop-shadow(0 0 22px rgba(56, 189, 248, 1));
       }
     }
 
@@ -484,6 +484,7 @@
                 class="text-[7.5px] px-1 py-0.1 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">2.5D</span>
               <span class="text-[11px] font-bold text-white tracking-wide leading-tight">CONNECT GROUP</span>
             </div>
+            <!-- Baris Keterangan Scope Peta Aktif -->
             <div class="text-[7.5px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5 leading-none"
               id="scope-status">
               <span class="text-cyan-300 truncate max-w-[220px] font-semibold" id="scope-title">AREA JAKARTA
@@ -874,31 +875,39 @@
     ];
 
     /* =========================================================
-       KOORDINAT PRESISI BATAS RESMI JAKARTA SELATAN (BULAT MELANDAI ALAMI)
+       KOORDINAT BATAS RESMI JAKARTA SELATAN (MENGIKUTI GARIS MERAH GOOGLE MAPS)
        ========================================================= */
     const JAKSEL_BORDER_COORDS = [
-      // 1. Batas Utara (Setiabudi - Tebet berbatasan dengan Menteng / Manggarai)
-      [-6.2045, 106.8185], [-6.2052, 106.8245], [-6.2078, 106.8335], [-6.2120, 106.8402],
-      [-6.2165, 106.8485], [-6.2202, 106.8580], [-6.2245, 106.8635],
-      // 2. Batas Timur (Tebet - Pancoran - Ciliwung - Kramat Jati Jaktim)
-      [-6.2340, 106.8640], [-6.2440, 106.8665], [-6.2520, 106.8625], [-6.2610, 106.8585],
-      [-6.2715, 106.8590], [-6.2820, 106.8540], [-6.2940, 106.8530], [-6.3050, 106.8545],
-      // 3. Batas Tenggara (Pasar Minggu - Jagakarsa berbatasan Ciracas / Cilangkap)
-      [-6.3210, 106.8480], [-6.3360, 106.8465], [-6.3520, 106.8420], [-6.3650, 106.8350],
-      // 4. Batas Paling Selatan (Srengseng Sawah / Jagakarsa berbatasan Kukusan Beji & UI Depok)
-      [-6.3710, 106.8320], [-6.3695, 106.8240], [-6.3615, 106.8180], [-6.3550, 106.8090],
-      [-6.3565, 106.8010], [-6.3470, 106.7920],
-      // 5. Batas Barat Daya (Ciganjur - Cilandak berbatasan Cinere Gandul Depok)
-      [-6.3360, 106.7865], [-6.3220, 106.7830], [-6.3120, 106.7795], [-6.3050, 106.7730],
-      // 6. Batas Barat (Lebak Bulus - Pondok Pinang berbatasan Ciputat & Rempoa Banten)
-      [-6.2950, 106.7700], [-6.2840, 106.7640], [-6.2750, 106.7610], [-6.2650, 106.7570],
-      // 7. Sektor Barat Laut (Kini Bulat Melandai Halus ke Barat Laut Tanpa Patah)
-      [-6.2555, 106.7525], [-6.2525, 106.7425], [-6.2485, 106.7360], [-6.2435, 106.7320],
-      [-6.2365, 106.7305], [-6.2285, 106.7320], [-6.2215, 106.7360], [-6.2160, 106.7420],
-      [-6.2115, 106.7495], [-6.2095, 106.7580], [-6.2105, 106.7675], [-6.2135, 106.7760],
-      // 8. Batas Utara Sisi Barat (Kebayoran Lama - Senayan berbatasan Palmerah / Tanah Abang)
-      [-6.2185, 106.7850], [-6.2160, 106.7920], [-6.2120, 106.8000], [-6.2150, 106.8060],
-      [-6.2110, 106.8110], [-6.2045, 106.8185]
+      // 1. UTARA: Menteng / Manggarai -> Tebet -> Kali Ciliwung
+      [-6.2050, 106.8450], [-6.2085, 106.8520], [-6.2160, 106.8590], [-6.2240, 106.8640],
+
+      // 2. TIMUR: Batas Jaktim (Kali Ciliwung / MT Haryono / Kramat Jati / Condet)
+      [-6.2350, 106.8670], [-6.2440, 106.8685], [-6.2520, 106.8650], [-6.2620, 106.8620],
+      [-6.2720, 106.8610], [-6.2820, 106.8560], [-6.2940, 106.8550], [-6.3050, 106.8565],
+
+      // 3. TENGGARA: Tanjung Barat -> Pasar Minggu -> Jagakarsa (Batas Ciracas / Cilangkap)
+      [-6.3180, 106.8520], [-6.3320, 106.8490], [-6.3450, 106.8450], [-6.3580, 106.8390],
+
+      // 4. SELATAN: Srengseng Sawah / Jagakarsa berbatasan dengan UI & Kukusan Depok
+      [-6.3680, 106.8340], [-6.3710, 106.8280], [-6.3680, 106.8200], [-6.3600, 106.8120],
+      [-6.3550, 106.8040], [-6.3520, 106.7960],
+
+      // 5. BARAT DAYA: Cipedak / Ciganjur / Cilandak berbatasan dengan Cinere & Gandul (Depok)
+      [-6.3420, 106.7900], [-6.3320, 106.7860], [-6.3200, 106.7830], [-6.3120, 106.7800],
+
+      // 6. SELATAN KE BARAT: Pondok Labu -> Lebak Bulus berbatasan dengan Ciputat Tangsel
+      [-6.3020, 106.7760], [-6.2920, 106.7720], [-6.2820, 106.7670], [-6.2740, 106.7600],
+
+      // 7. BARAT: Sektor Pesanggrahan meluas melandai ke arah barat (Bintaro, Univ Budi Luhur, Petukangan)
+      [-6.2680, 106.7510], [-6.2620, 106.7420], [-6.2550, 106.7360], [-6.2450, 106.7330],
+      [-6.2360, 106.7330], [-6.2270, 106.7360], [-6.2200, 106.7420], [-6.2160, 106.7500],
+
+      // 8. BARAT LAUT KE TIMUR: Batas Jakbar (Joglo / Kebon Jeruk / Sukabumi Selatan / Permata Hijau)
+      [-6.2130, 106.7600], [-6.2110, 106.7700], [-6.2100, 106.7820], [-6.2120, 106.7920],
+
+      // 9. UTARA: Batas Jakpus (Palmerah -> Senayan / GBK -> SCBD / Semanggi -> Setiabudi / Kuningan)
+      [-6.2150, 106.8020], [-6.2170, 106.8120], [-6.2130, 106.8220], [-6.2080, 106.8320],
+      [-6.2050, 106.8450]
     ];
 
     function setupBoundaries() {
@@ -916,7 +925,7 @@
       jksGroup.addLayer(L.polygon(JAKSEL_BORDER_COORDS, {
         color: '#0284c7', weight: 7, opacity: 0.35, fillColor: '#0369a1', fillOpacity: 0.08, dashArray: '6, 5', interactive: false
       }));
-      // Core bright neon stroke mengikuti lekukan geografis alami
+      // Core bright neon stroke mengikuti lekukan geografis alami Google Maps
       jksGroup.addLayer(L.polygon(JAKSEL_BORDER_COORDS, {
         color: '#38bdf8', weight: 3, opacity: 0.95, fillOpacity: 0, className: 'neon-jaksel-path', interactive: false
       }));
