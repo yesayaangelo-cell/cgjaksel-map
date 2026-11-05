@@ -507,9 +507,9 @@
       </div>
     </div>
 
-    <!-- PRESENTATION CONTROLLER -->
+    <!-- PRESENTATION CONTROLLER (OTOMATIS TERSEMBUNYI SEJAK AWAL) -->
     <nav id="bottom-controller"
-      class="absolute bottom-11 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 pointer-events-none transition-all duration-500 ease-out">
+      class="absolute bottom-11 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 pointer-events-none transition-all duration-500 ease-out opacity-0 translate-y-16">
       <div
         class="text-[9px] font-mono tracking-wider text-slate-400/80 bg-black/75 px-3.5 py-1 rounded-full border border-white/10 backdrop-blur-md pointer-events-auto whitespace-nowrap shadow-lg">
         PRESENTER KEYS: <span class="text-cyan-300 font-bold">[H]</span> HOME &nbsp;•&nbsp; <span
@@ -553,11 +553,12 @@
       </div>
     </nav>
 
+    <!-- TOMBOL TOGGLE (AWAL TAMPIL SEBAGAI MENU [C]) -->
     <button id="btn-toggle-c" type="button" onclick="toggleBottomControls()"
       title="Toggle Navigation Menu (Key: C / Touch)"
       class="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-40 px-3 py-1 rounded-full glass-panel border border-cyan-400/40 text-[9.5px] font-mono font-semibold text-cyan-300 hover:text-white hover:border-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.5)] flex items-center gap-1.5 transition-all duration-300 shadow-lg active:scale-95 pointer-events-auto">
-      <span id="btn-c-icon" class="text-[10px] transition-transform duration-300">▼</span>
-      <span id="btn-c-text">HIDE [C]</span>
+      <span id="btn-c-icon" class="text-[10px] transition-transform duration-300">▲</span>
+      <span id="btn-c-text">MENU [C]</span>
     </button>
 
     <!-- RIGHT SLIDE-OVER: CG Telemetry & Inspector Panel -->
@@ -855,7 +856,8 @@
     let jakselBoundaryLayer = null;
     let selectedCG = null;
     let isEditMode = false;
-    let bottomControlsVisible = true;
+    // SET CONTROLS DEFAULT TERSEMBUNYI
+    let bottomControlsVisible = false;
 
     const GMS_GC_COORDS = [-6.2442, 106.7836];
 
@@ -1057,7 +1059,6 @@
           });
 
           persistData();
-          // HANYA tampilkan toast jika user sengaja mengklik tombol Sync Sheets
           if (manualTrigger) {
             showToast('Data Sheets Berhasil Diperbarui!', 2500);
           }
@@ -1088,7 +1089,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        // Silent sync di latar belakang (tanpa toast agar presentasi bersih)
       } catch (err) {
         console.error('Failed to post to Google Sheets:', err);
       }
@@ -1385,7 +1385,6 @@
       }
     }
 
-    // Mengembalikan ke placeholder diam-diam tanpa memunculkan toast
     function handlePhotoError() {
       const imgEl = document.getElementById('leader-photo-img');
       const placeholderEl = document.getElementById('leader-photo-placeholder');
