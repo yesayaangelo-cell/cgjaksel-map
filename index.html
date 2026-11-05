@@ -589,9 +589,44 @@
 
         <div id="inspector-view-mode" class="p-4 flex-1 overflow-y-auto space-y-3">
           <div id="insp-badge"
-            class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold border ${theme.border} ${theme.bg} ${theme.text}">
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold border">
             <span class="w-2 h-2 rounded-full bg-current"></span>
             <span id="insp-category">Young Adult</span>
+          </div>
+
+          <!-- CONTAINER FOTO PROFIL LEADER CG -->
+          <div
+            class="relative group rounded-xl overflow-hidden border border-cyan-500/30 bg-slate-950/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
+            <div id="leader-photo-container"
+              class="w-full h-44 bg-slate-900/90 flex flex-col items-center justify-center relative overflow-hidden">
+              <img id="leader-photo-img" src="" alt="Leader Photo"
+                class="hidden w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                onerror="handlePhotoError()">
+              <div id="leader-photo-placeholder"
+                class="flex flex-col items-center justify-center p-4 text-center text-slate-400">
+                <div
+                  class="w-14 h-14 rounded-full bg-slate-800/80 border border-cyan-500/30 flex items-center justify-center text-2xl shadow-inner mb-2">
+                  👤
+                </div>
+                <span class="text-[11px] font-semibold text-slate-300">Belum Ada Foto Leader</span>
+                <span class="text-[9px] text-slate-500 font-mono mt-0.5">Upload manual atau isi URL foto di Excel</span>
+              </div>
+            </div>
+
+            <!-- Action Overlay Button untuk Ganti / Upload Foto -->
+            <div class="absolute bottom-2 right-2 flex items-center gap-1.5">
+              <input type="file" id="leader-photo-input" accept="image/*" class="hidden"
+                onchange="handleManualPhotoUpload(event)">
+              <button type="button" onclick="document.getElementById('leader-photo-input').click()"
+                class="px-2.5 py-1 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-400/50 text-cyan-200 text-[10px] font-mono font-semibold flex items-center gap-1 shadow-md transition-all active:scale-95">
+                <span>📷 Upload Foto</span>
+              </button>
+              <button id="btn-remove-photo" type="button" onclick="removeLeaderPhoto()"
+                class="hidden px-2 py-1 rounded-lg bg-red-950/90 hover:bg-red-900 border border-red-500/50 text-red-200 text-[10px] font-mono transition-all"
+                title="Hapus Foto">
+                ✕
+              </button>
+            </div>
           </div>
 
           <div>
@@ -664,6 +699,13 @@
             <label class="text-[9px] text-cyan-300 uppercase block mb-1">Nama / Pemimpin CG</label>
             <input type="text" id="edit-leader"
               class="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-100 focus:border-cyan-400 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="text-[9px] text-cyan-300 uppercase block mb-1">URL Foto Leader (Opsional dari
+              Excel/Drive)</label>
+            <input type="url" id="edit-photo-url" placeholder="https://example.com/foto.jpg"
+              class="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-100 focus:border-cyan-400 focus:outline-none text-[10px]">
           </div>
 
           <div>
@@ -1002,6 +1044,9 @@
             if ((row.cat || '').toLowerCase().includes('ya')) cat = 'YA';
             else if ((row.cat || '').toLowerCase().includes('fam')) cat = 'Family';
 
+            // Ambil URL foto jika ada di Excel (kolom foto / photo / image / img)
+            const photoUrl = row.foto || row.photo || row.image || row.img || '';
+
             currentData.push({
               id: `sheet-${Date.now()}-${Math.random()}`,
               "Kategori": cat,
@@ -1010,7 +1055,8 @@
               "Nama lokasi / area": row.loc || '',
               "Latitude": lat,
               "Longitude": lng,
-              "Status verifikasi": row.status || 'Alamat terverifikasi'
+              "Status verifikasi": row.status || 'Alamat terverifikasi',
+              "Foto": photoUrl
             });
           });
 
@@ -1032,7 +1078,8 @@
         coach: '',
         status: nodePayload['Status verifikasi'] || '',
         lat: Number(nodePayload.Latitude),
-        lng: Number(nodePayload.Longitude)
+        lng: Number(nodePayload.Longitude),
+        foto: nodePayload['Foto'] || ''
       };
 
       try {
@@ -1319,6 +1366,71 @@
       document.getElementById('inspector').classList.remove('translate-x-[115%]');
     }
 
+    /* =========================================================
+       LOGIKA FOTO PROFIL LEADER (MANUAL UPLOAD & EXCEL)
+       ========================================================= */
+    function renderLeaderPhoto(photoSrc) {
+      const imgEl = document.getElementById('leader-photo-img');
+      const placeholderEl = document.getElementById('leader-photo-placeholder');
+      const removeBtn = document.getElementById('btn-remove-photo');
+
+      if (photoSrc && photoSrc.trim() !== '') {
+        imgEl.src = photoSrc;
+        imgEl.classList.remove('hidden');
+        placeholderEl.classList.add('hidden');
+        if (removeBtn) removeBtn.classList.remove('hidden');
+      } else {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        placeholderEl.classList.remove('hidden');
+        if (removeBtn) removeBtn.classList.add('hidden');
+      }
+    }
+
+    function handlePhotoError() {
+      const imgEl = document.getElementById('leader-photo-img');
+      const placeholderEl = document.getElementById('leader-photo-placeholder');
+      const removeBtn = document.getElementById('btn-remove-photo');
+      imgEl.classList.add('hidden');
+      placeholderEl.classList.remove('hidden');
+      if (removeBtn) removeBtn.classList.add('hidden');
+      showToast('⚠️ Gagal memuat foto leader', 2500);
+    }
+
+    function handleManualPhotoUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file || !selectedCG) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const base64Data = e.target.result;
+        selectedCG.Foto = base64Data;
+
+        // Simpan ke dataset lokal
+        const idx = currentData.findIndex(item => item.id === selectedCG.id);
+        if (idx !== -1) {
+          currentData[idx].Foto = base64Data;
+          persistData();
+        }
+
+        renderLeaderPhoto(base64Data);
+        showToast('📷 Foto Leader berhasil di-upload!', 2500);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeLeaderPhoto() {
+      if (!selectedCG) return;
+      selectedCG.Foto = '';
+      const idx = currentData.findIndex(item => item.id === selectedCG.id);
+      if (idx !== -1) {
+        currentData[idx].Foto = '';
+        persistData();
+      }
+      renderLeaderPhoto('');
+      showToast('🗑️ Foto Leader dihapus', 2000);
+    }
+
     function renderInspectorView() {
       if (!selectedCG) return;
       const theme = COLOR_MAP[selectedCG.Kategori] || COLOR_MAP.YA;
@@ -1332,6 +1444,9 @@
       document.getElementById('insp-lat').textContent = Number(selectedCG.Latitude).toFixed(5);
       document.getElementById('insp-lng').textContent = Number(selectedCG.Longitude).toFixed(5);
       document.getElementById('insp-status').textContent = selectedCG['Status verifikasi'] || 'Koordinat area representatif.';
+
+      // Tampilkan Foto Leader dari objek terpilih (dari Excel atau Upload)
+      renderLeaderPhoto(selectedCG.Foto || '');
 
       const coList = document.getElementById('co-located-list');
       const coCount = document.getElementById('co-count');
@@ -1360,6 +1475,7 @@
       document.getElementById('edit-nomor').value = selectedCG['Nomor CG'] || '';
       document.getElementById('edit-kategori').value = selectedCG.Kategori || 'YA';
       document.getElementById('edit-leader').value = selectedCG['Nama/Pemimpin CG'] || '';
+      document.getElementById('edit-photo-url').value = selectedCG.Foto || '';
       document.getElementById('edit-area').value = selectedCG['Nama lokasi / area'] || '';
       document.getElementById('edit-lat').value = selectedCG.Latitude;
       document.getElementById('edit-lng').value = selectedCG.Longitude;
@@ -1414,6 +1530,7 @@
       const newNomor = document.getElementById('edit-nomor').value.trim();
       const newKategori = document.getElementById('edit-kategori').value;
       const newLeader = document.getElementById('edit-leader').value.trim();
+      const newPhoto = document.getElementById('edit-photo-url').value.trim();
       const newArea = document.getElementById('edit-area').value.trim();
       const newLat = parseFloat(document.getElementById('edit-lat').value);
       const newLng = parseFloat(document.getElementById('edit-lng').value);
@@ -1424,6 +1541,7 @@
         currentData[idx]['Nomor CG'] = newNomor;
         currentData[idx].Kategori = newKategori;
         currentData[idx]['Nama/Pemimpin CG'] = newLeader;
+        currentData[idx]['Foto'] = newPhoto || currentData[idx]['Foto'] || '';
         currentData[idx]['Nama lokasi / area'] = newArea;
         currentData[idx].Latitude = newLat;
         currentData[idx].Longitude = newLng;
