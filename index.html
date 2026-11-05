@@ -875,37 +875,42 @@
     ];
 
     /* =========================================================
-       KOORDINAT BATAS RESMI JAKARTA SELATAN (MENGIKUTI GARIS MERAH GOOGLE MAPS)
+       KOORDINAT BATAS RESMI JAKARTA SELATAN (PRESISI PENUH MENCAKUP TEBET ECO PARK)
        ========================================================= */
     const JAKSEL_BORDER_COORDS = [
-      // 1. UTARA: Menteng / Manggarai -> Tebet -> Kali Ciliwung
-      [-6.2050, 106.8450], [-6.2085, 106.8520], [-6.2160, 106.8590], [-6.2240, 106.8640],
+      // 1. UTARA: Menteng Dalam / Manggarai menuju Tebet Utara
+      [-6.2050, 106.8450], [-6.2080, 106.8520], [-6.2160, 106.8590], [-6.2200, 106.8630],
 
-      // 2. TIMUR: Batas Jaktim (Kali Ciliwung / MT Haryono / Kramat Jati / Condet)
-      [-6.2350, 106.8670], [-6.2440, 106.8685], [-6.2520, 106.8650], [-6.2620, 106.8620],
-      [-6.2720, 106.8610], [-6.2820, 106.8560], [-6.2940, 106.8550], [-6.3050, 106.8565],
+      // 2. TIMUR (TEBET): Melengkung di sisi timur Tebet Eco Park & Ciliwung
+      [-6.2245, 106.8645], [-6.2310, 106.8655], [-6.2380, 106.8650], [-6.2440, 106.8635],
+      [-6.2480, 106.8638], [-6.2520, 106.8625],
 
-      // 3. TENGGARA: Tanjung Barat -> Pasar Minggu -> Jagakarsa (Batas Ciracas / Cilangkap)
-      [-6.3180, 106.8520], [-6.3320, 106.8490], [-6.3450, 106.8450], [-6.3580, 106.8390],
+      // 3. TIMUR (KALI CILIWUNG): Batas dengan Jakarta Timur (Kramat Jati / Halim)
+      [-6.2610, 106.8615], [-6.2710, 106.8605], [-6.2780, 106.8580], [-6.2850, 106.8550],
+      [-6.2940, 106.8540], [-6.3050, 106.8555],
 
-      // 4. SELATAN: Srengseng Sawah / Jagakarsa berbatasan dengan UI & Kukusan Depok
-      [-6.3680, 106.8340], [-6.3710, 106.8280], [-6.3680, 106.8200], [-6.3600, 106.8120],
-      [-6.3550, 106.8040], [-6.3520, 106.7960],
+      // 4. TENGGARA: Tanjung Barat -> Pasar Minggu -> Batas Ciracas / Cijantung
+      [-6.3150, 106.8525], [-6.3250, 106.8495], [-6.3360, 106.8460], [-6.3480, 106.8420],
+      [-6.3580, 106.8375],
 
-      // 5. BARAT DAYA: Cipedak / Ciganjur / Cilandak berbatasan dengan Cinere & Gandul (Depok)
-      [-6.3420, 106.7900], [-6.3320, 106.7860], [-6.3200, 106.7830], [-6.3120, 106.7800],
+      // 5. SELATAN: Jagakarsa / Srengseng Sawah berbatasan dengan Kukusan & UI Depok
+      [-6.3680, 106.8335], [-6.3710, 106.8275], [-6.3685, 106.8195], [-6.3610, 106.8115],
+      [-6.3555, 106.8040], [-6.3525, 106.7960],
 
-      // 6. SELATAN KE BARAT: Pondok Labu -> Lebak Bulus berbatasan dengan Ciputat Tangsel
-      [-6.3020, 106.7760], [-6.2920, 106.7720], [-6.2820, 106.7670], [-6.2740, 106.7600],
+      // 6. BARAT DAYA: Cipedak / Ciganjur / Gandul berbatasan dengan Cinere (Depok)
+      [-6.3420, 106.7900], [-6.3325, 106.7860], [-6.3205, 106.7830], [-6.3120, 106.7800],
 
-      // 7. BARAT: Sektor Pesanggrahan meluas melandai ke arah barat (Bintaro, Univ Budi Luhur, Petukangan)
+      // 7. SELATAN KE BARAT: Pondok Labu -> Lebak Bulus berbatasan dengan Tangerang Selatan
+      [-6.3020, 106.7760], [-6.2925, 106.7720], [-6.2825, 106.7670], [-6.2745, 106.7600],
+
+      // 8. BARAT (PESANGGRAHAN): Melingkar mulus mencakup Bintaro, Petukangan & Univ Budi Luhur
       [-6.2680, 106.7510], [-6.2620, 106.7420], [-6.2550, 106.7360], [-6.2450, 106.7330],
       [-6.2360, 106.7330], [-6.2270, 106.7360], [-6.2200, 106.7420], [-6.2160, 106.7500],
 
-      // 8. BARAT LAUT KE TIMUR: Batas Jakbar (Joglo / Kebon Jeruk / Sukabumi Selatan / Permata Hijau)
+      // 9. BARAT LAUT KE TIMUR: Batas Jakarta Barat (Joglo / Kebon Jeruk / Sukabumi Selatan / Permata Hijau)
       [-6.2130, 106.7600], [-6.2110, 106.7700], [-6.2100, 106.7820], [-6.2120, 106.7920],
 
-      // 9. UTARA: Batas Jakpus (Palmerah -> Senayan / GBK -> SCBD / Semanggi -> Setiabudi / Kuningan)
+      // 10. UTARA: Batas Jakarta Pusat (Palmerah -> Senayan / GBK -> SCBD / Semanggi -> Kuningan)
       [-6.2150, 106.8020], [-6.2170, 106.8120], [-6.2130, 106.8220], [-6.2080, 106.8320],
       [-6.2050, 106.8450]
     ];
