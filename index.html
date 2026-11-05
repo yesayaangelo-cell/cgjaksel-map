@@ -238,7 +238,7 @@
       }
     }
 
-    /* IKON GEREJA GMS GANDARIA CITY (TEGAK LURUS & NEON MERAH) */
+    /* IKON GEREJA GMS GANDARIA CITY */
     .church-pin-container {
       position: relative;
       width: 46px;
@@ -484,7 +484,6 @@
                 class="text-[7.5px] px-1 py-0.1 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono">2.5D</span>
               <span class="text-[11px] font-bold text-white tracking-wide leading-tight">CONNECT GROUP</span>
             </div>
-            <!-- Baris Keterangan Scope Peta Aktif -->
             <div class="text-[7.5px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5 leading-none"
               id="scope-status">
               <span class="text-cyan-300 truncate max-w-[220px] font-semibold" id="scope-title">AREA JAKARTA
@@ -613,7 +612,7 @@
               </div>
             </div>
 
-            <!-- Action Overlay Button untuk Ganti / Upload Foto -->
+            <!-- Action Overlay Button -->
             <div class="absolute bottom-2 right-2 flex items-center gap-1.5">
               <input type="file" id="leader-photo-input" accept="image/*" class="hidden"
                 onchange="handleManualPhotoUpload(event)">
@@ -968,11 +967,9 @@
       jakartaBoundaryLayer = jktGroup;
 
       const jksGroup = L.featureGroup();
-      // Outer glow boundary
       jksGroup.addLayer(L.polygon(JAKSEL_BORDER_COORDS, {
         color: '#0284c7', weight: 7, opacity: 0.35, fillColor: '#0369a1', fillOpacity: 0.08, dashArray: '6, 5', interactive: false
       }));
-      // Core bright neon stroke mengikuti lekukan geografis alami Google Maps
       jksGroup.addLayer(L.polygon(JAKSEL_BORDER_COORDS, {
         color: '#38bdf8', weight: 3, opacity: 0.95, fillOpacity: 0, className: 'neon-jaksel-path', interactive: false
       }));
@@ -1044,7 +1041,6 @@
             if ((row.cat || '').toLowerCase().includes('ya')) cat = 'YA';
             else if ((row.cat || '').toLowerCase().includes('fam')) cat = 'Family';
 
-            // Ambil URL foto jika ada di Excel (kolom foto / photo / image / img)
             const photoUrl = row.foto || row.photo || row.image || row.img || '';
 
             currentData.push({
@@ -1061,7 +1057,10 @@
           });
 
           persistData();
-          showToast(manualTrigger ? 'Data Sheets Berhasil Diperbarui!' : 'Sinkron dengan Google Sheets', 2500);
+          // HANYA tampilkan toast jika user sengaja mengklik tombol Sync Sheets
+          if (manualTrigger) {
+            showToast('Data Sheets Berhasil Diperbarui!', 2500);
+          }
         }
       } catch (err) {
         console.warn('Google Sheets offline/loading cached dataset:', err);
@@ -1089,10 +1088,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        showToast('Berhasil Sync ke Google Sheets!', 2500);
+        // Silent sync di latar belakang (tanpa toast agar presentasi bersih)
       } catch (err) {
         console.error('Failed to post to Google Sheets:', err);
-        showToast('Gagal simpan ke Sheets (Tersimpan Lokal)', 2500);
       }
     }
 
@@ -1367,7 +1365,7 @@
     }
 
     /* =========================================================
-       LOGIKA FOTO PROFIL LEADER (MANUAL UPLOAD & EXCEL)
+       LOGIKA FOTO PROFIL LEADER (SILENT ERROR HANDLING)
        ========================================================= */
     function renderLeaderPhoto(photoSrc) {
       const imgEl = document.getElementById('leader-photo-img');
@@ -1387,6 +1385,7 @@
       }
     }
 
+    // Mengembalikan ke placeholder diam-diam tanpa memunculkan toast
     function handlePhotoError() {
       const imgEl = document.getElementById('leader-photo-img');
       const placeholderEl = document.getElementById('leader-photo-placeholder');
@@ -1394,7 +1393,6 @@
       imgEl.classList.add('hidden');
       placeholderEl.classList.remove('hidden');
       if (removeBtn) removeBtn.classList.add('hidden');
-      showToast('⚠️ Gagal memuat foto leader', 2500);
     }
 
     function handleManualPhotoUpload(event) {
@@ -1406,7 +1404,6 @@
         const base64Data = e.target.result;
         selectedCG.Foto = base64Data;
 
-        // Simpan ke dataset lokal
         const idx = currentData.findIndex(item => item.id === selectedCG.id);
         if (idx !== -1) {
           currentData[idx].Foto = base64Data;
@@ -1414,7 +1411,6 @@
         }
 
         renderLeaderPhoto(base64Data);
-        showToast('📷 Foto Leader berhasil di-upload!', 2500);
       };
       reader.readAsDataURL(file);
     }
@@ -1428,7 +1424,6 @@
         persistData();
       }
       renderLeaderPhoto('');
-      showToast('🗑️ Foto Leader dihapus', 2000);
     }
 
     function renderInspectorView() {
@@ -1445,7 +1440,6 @@
       document.getElementById('insp-lng').textContent = Number(selectedCG.Longitude).toFixed(5);
       document.getElementById('insp-status').textContent = selectedCG['Status verifikasi'] || 'Koordinat area representatif.';
 
-      // Tampilkan Foto Leader dari objek terpilih (dari Excel atau Upload)
       renderLeaderPhoto(selectedCG.Foto || '');
 
       const coList = document.getElementById('co-located-list');
