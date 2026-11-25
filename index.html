@@ -436,7 +436,43 @@
       <span id="toast-text" class="tracking-wide font-bold">AREA JAKARTA SELATAN</span>
     </div>
 
-    <!-- TOP-RIGHT STACK (PADAT & TANPA RUANG KOSONG) -->
+    <!-- LEGENDA KATEGORI WARNA (MUNCUL OTOMATIS SAAT MODE JAKSEL FOCUS) -->
+    <div id="jaksel-legend"
+      class="absolute bottom-4 left-4 z-20 glass-panel px-3.5 py-2.5 rounded-xl border-cyan-500/30 transition-all duration-500 opacity-0 translate-y-4 pointer-events-none">
+      <div
+        class="text-[8.5px] font-mono tracking-widest text-cyan-400 font-bold uppercase mb-2 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span>KATEGORI CONNECT GROUP</span>
+      </div>
+      <div class="space-y-1.5 text-[11px] font-sans">
+        <div class="flex items-center justify-between gap-5">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#0284c7] border border-white shadow-[0_0_8px_#0284c7]"></span>
+            <span class="text-slate-200 font-semibold">Young Adult (YA)</span>
+          </div>
+          <span id="legend-count-ya"
+            class="font-mono text-[10px] text-cyan-300 font-bold bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-500/30">0</span>
+        </div>
+        <div class="flex items-center justify-between gap-5">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#9333ea] border border-white shadow-[0_0_8px_#9333ea]"></span>
+            <span class="text-slate-200 font-semibold">Family</span>
+          </div>
+          <span id="legend-count-family"
+            class="font-mono text-[10px] text-purple-300 font-bold bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-500/30">0</span>
+        </div>
+        <div class="flex items-center justify-between gap-5">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#d97706] border border-white shadow-[0_0_8px_#d97706]"></span>
+            <span class="text-slate-200 font-semibold">Senior</span>
+          </div>
+          <span id="legend-count-senior"
+            class="font-mono text-[10px] text-amber-300 font-bold bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/30">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP-RIGHT STACK -->
     <div class="absolute top-3.5 right-4 z-20 flex flex-col items-end gap-2 pointer-events-none">
 
       <!-- SAT-LINK, WIB Clock & MAP THEME SWITCHER -->
@@ -459,7 +495,7 @@
         </button>
       </div>
 
-      <!-- Main Header Brand Card (DIPADATKAN DENGAN w-auto & gap-3) -->
+      <!-- Main Header Brand Card -->
       <header id="main-header-brand" class="pointer-events-auto">
         <button id="btn-brand-home" type="button" onclick="resetToHomeCommand()" title="Click to reset to Home (Key: H)"
           class="glass-panel w-auto px-3.5 py-1.5 rounded-lg flex items-center gap-3 force-clickable border-r-2 border-r-cyan-400 border-l-0 text-right hover:border-r-cyan-300 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all group">
@@ -539,7 +575,6 @@
           <span class="whitespace-nowrap">Archipelago</span>
         </button>
 
-        <!-- SEPARATOR DAN MENU DATA MANAGEMENT (SYNC & BACKUP) DI BAWAH -->
         <div class="w-[1px] h-5 bg-cyan-500/40 mx-1"></div>
 
         <button onclick="fetchSheetData(true)" title="Muat ulang data terbaru dari Google Sheets"
@@ -556,7 +591,7 @@
       </div>
     </nav>
 
-    <!-- TOMBOL TOGGLE (AWAL TAMPIL SEBAGAI MENU [C]) -->
+    <!-- TOMBOL TOGGLE -->
     <button id="btn-toggle-c" type="button" onclick="toggleBottomControls()"
       title="Toggle Navigation Menu (Key: C / Touch)"
       class="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-40 px-3 py-1 rounded-full glass-panel border border-cyan-400/40 text-[9.5px] font-mono font-semibold text-cyan-300 hover:text-white hover:border-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.5)] flex items-center gap-1.5 transition-all duration-300 shadow-lg active:scale-95 pointer-events-auto">
@@ -864,6 +899,36 @@
     const GMS_GC_COORDS = [-6.2442, 106.7836];
 
     /* =========================================================
+       KONTROL LEGENDA KATEGORI WARNA (KHUSUS JAKSEL FOCUS)
+       ========================================================= */
+    function updateLegendCounts() {
+      const yaCount = currentData.filter(d => d.Kategori === 'YA').length;
+      const famCount = currentData.filter(d => d.Kategori === 'Family').length;
+      const senCount = currentData.filter(d => d.Kategori === 'Senior').length;
+
+      const elYa = document.getElementById('legend-count-ya');
+      const elFam = document.getElementById('legend-count-family');
+      const elSen = document.getElementById('legend-count-senior');
+
+      if (elYa) elYa.textContent = yaCount;
+      if (elFam) elFam.textContent = famCount;
+      if (elSen) elSen.textContent = senCount;
+    }
+
+    function toggleJakselLegend(show) {
+      const legendEl = document.getElementById('jaksel-legend');
+      if (!legendEl) return;
+      if (show) {
+        updateLegendCounts();
+        legendEl.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+        legendEl.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+      } else {
+        legendEl.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+        legendEl.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+      }
+    }
+
+    /* =========================================================
        SETUP MARKER GEREJA (TEGAK LURUS & NEON MERAH)
        ========================================================= */
     function setupGmsChurchMarker() {
@@ -1024,6 +1089,7 @@
       }
       PROCESSED_DATA = processCoordinates(currentData);
       renderMarkers();
+      updateLegendCounts();
     }
 
     async function fetchSheetData(manualTrigger = false) {
@@ -1274,6 +1340,7 @@
       closeInspector();
       filterCategory('All');
       setActivePill('btn-home');
+      toggleJakselLegend(false);
 
       hideToastNow();
 
@@ -1310,6 +1377,8 @@
       updateScopeHeader(VIEWS.jaksel.badgeText, VIEWS.jaksel.scopeText);
       map.flyTo(VIEWS.jaksel.center, VIEWS.jaksel.zoom, { duration: VIEWS.jaksel.duration });
 
+      // Tampilkan legenda keterangan warna kategori saat masuk mode Jaksel Focus
+      toggleJakselLegend(true);
       triggerScopeToastAfterFly('AREA JAKARTA SELATAN', 2000);
       toggleBottomControls(false);
     }
@@ -1318,6 +1387,7 @@
       closeInspector();
       map.closePopup();
       hideToastNow();
+      toggleJakselLegend(false);
 
       if (gmsChurchMarker && !map.hasLayer(gmsChurchMarker)) {
         gmsChurchMarker.addTo(map);
@@ -1338,6 +1408,7 @@
       closeInspector();
       map.closePopup();
       hideToastNow();
+      toggleJakselLegend(false);
 
       if (gmsChurchMarker && map.hasLayer(gmsChurchMarker)) {
         map.removeLayer(gmsChurchMarker);
@@ -1630,6 +1701,7 @@
     setupGmsChurchMarker();
     setupBoundaries();
     renderMarkers();
+    updateLegendCounts();
     fetchSheetData();
 
     function updateClock() {
